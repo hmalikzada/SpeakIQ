@@ -1,0 +1,21 @@
+# ── Large source assets (not needed to run the web app) ──────
+*.obj
+*.blend
+*.blend1
+
+# ── Render output images (development artifacts) ─────────────
+rodin_*.png
+rodin_*.png
+test_*.png
+particle_*.png
+
+# ── OS / editor ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.claude/
+
+# ── Secrets ───────────────────────────────────────────────────
+.env
+*.env.local

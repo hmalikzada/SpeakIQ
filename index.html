@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>SpeakIQ — AI Speaking Coach</title>
+
+  <!-- Three.js r160 via importmap -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+      "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#050a14; --bg2:#080f1e;
+      --cyan:#06b6d4; --blue:#3b82f6;
+      --green:#10b981; --red:#ef4444; --amber:#f59e0b;
+      --text:#e2e8f0; --text-muted:#64748b;
+      --glass:rgba(255,255,255,0.04);
+      --glass-border:rgba(255,255,255,0.08);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:'Plus Jakarta Sans',sans-serif;
+      height:100vh;overflow:hidden;
+      display:flex;flex-direction:column;
+    }
+
+    /* ── HEADER ── */
+    .header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 28px;
+      border-bottom:1px solid var(--glass-border);
+      background:rgba(5,10,20,0.85);
+      backdrop-filter:blur(16px);
+      flex-shrink:0;z-index:10;
+    }
+    .logo{display:flex;align-items:center;gap:10px;}
+    .logo-icon{
+      width:34px;height:34px;
+      background:linear-gradient(135deg,var(--cyan),var(--blue));
+      border-radius:9px;display:flex;align-items:center;
+      justify-content:center;font-size:17px;
+      box-shadow:0 0 16px rgba(6,182,212,0.4);
+    }
+    .logo-text{
+      font-size:21px;font-weight:800;letter-spacing:-0.5px;
+      background:linear-gradient(120deg,#fff 40%,var(--cyan));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .logo-tag{font-size:11px;color:var(--text-muted);align-self:flex-end;margin-bottom:3px;margin-left:2px;}
+    .header-right{display:flex;align-items:center;gap:14px;}
+    .session-timer{
+      font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;
+      color:var(--text-muted);background:var(--glass);border:1px solid var(--glass-border);
+      padding:5px 14px;border-radius:20px;min-width:64px;text-align:center;
+    }
+    .session-timer.running{color:var(--cyan);border-color:rgba(6,182,212,0.4);}
+    .api-status{
+      display:flex;align-items:center;gap:6px;
+      padding:6px 14px;border-radius:20px;
+      background:var(--glass);border:1px solid var(--glass-border);
+      font-size:12px;color:var(--text-muted);cursor:pointer;transition:all 0.2s;
+    }
+    .api-status:hover{border-color:rgba(6,182,212,0.3);}
+    .api-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);transition:background 0.3s;}
+    .api-dot.on{background:var(--green);animation:pdot 2s infinite;}
+    @keyframes pdot{0%,100%{opacity:1}50%{opacity:0.4}}
+
+    /* ── MAIN LAYOUT ── */
+    .main{
+      flex:1;display:grid;
+      grid-template-columns:minmax(340px,55%) 1fr;
+      overflow:hidden;
+    }
+
+    /* ── LEFT: FACE PANEL ── */
+    .face-panel{
+      position:relative;
+      display:flex;flex-direction:column;
+      align-items:center;
+      border-right:1px solid var(--glass-border);
+      overflow:hidden;
+      background:#050a14;
+    }
+
+    /* WebGL canvas fills the face panel entirely */
+    #faceCanvas{
+      position:absolute;
+      inset:0;width:100%;height:100%;
+      display:block;
+    }
+
+    /* Scan-corner decorations (above canvas via z-index) */
+    .face-ui{
+      position:absolute;inset:0;pointer-events:none;z-index:2;
+    }
+    .corner{position:absolute;width:22px;height:22px;}
+    .corner-tl{top:18px;left:18px;border-top:2px solid rgba(180,195,215,0.55);border-left:2px solid rgba(180,195,215,0.55);border-radius:3px 0 0 0;}
+    .corner-tr{top:18px;right:18px;border-top:2px solid rgba(180,195,215,0.55);border-right:2px solid rgba(180,195,215,0.55);border-radius:0 3px 0 0;}
+    .corner-bl{bottom:72px;left:18px;border-bottom:2px solid rgba(180,195,215,0.55);border-left:2px solid rgba(180,195,215,0.55);border-radius:0 0 0 3px;}
+    .corner-br{bottom:72px;right:18px;border-bottom:2px solid rgba(180,195,215,0.55);border-right:2px solid rgba(180,195,215,0.55);border-radius:0 0 3px 0;}
+
+    /* Mode chip + bubble overlaid on face panel bottom */
+    .face-bottom{
+      position:absolute;bottom:0;left:0;right:0;z-index:3;
+      display:flex;flex-direction:column;align-items:center;
+      padding:14px 24px 16px;
+      background:linear-gradient(to top,rgba(5,10,20,0.92) 0%,transparent 100%);
+      pointer-events:none;
+    }
+    .ai-mode-chip{
+      padding:4px 16px;border-radius:20px;
+      font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+      border:1px solid rgba(180,195,215,0.4);color:rgba(200,215,230,0.80);
+      margin-bottom:10px;pointer-events:none;
+    }
+    .ai-mode-chip.listening{border-color:var(--green);color:var(--green);}
+    .ai-mode-chip.analyzing{border-color:var(--amber);color:var(--amber);}
+    .ai-mode-chip.speaking {border-color:var(--cyan); color:var(--cyan);}
+    .speech-bubble{
+      padding:12px 20px;
+      background:rgba(8,15,30,0.80);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px;font-size:13px;
+      color:var(--text);max-width:420px;width:100%;
+      text-align:center;line-height:1.55;
+      min-height:48px;display:flex;align-items:center;justify-content:center;
+    }
+    .typing{display:flex;gap:5px;align-items:center;}
+    .typing span{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:bounce 1.3s infinite;}
+    .typing span:nth-child(2){animation-delay:.15s}
+    .typing span:nth-child(3){animation-delay:.3s}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-7px);opacity:1}}
+
+    /* ── RIGHT: CONTROLS ── */
+    .controls-panel{
+      display:flex;flex-direction:column;padding:22px 24px;gap:18px;overflow-y:auto;
+    }
+    .controls-panel::-webkit-scrollbar{width:3px;}
+    .controls-panel::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:4px;}
+    .sec-label{font-size:10.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px;}
+    .api-row{display:flex;gap:8px;}
+    .inp{
+      flex:1;padding:11px 15px;background:var(--glass);border:1px solid var(--glass-border);
+      border-radius:10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;
+      outline:none;transition:border-color 0.2s;
+    }
+    .inp:focus{border-color:var(--cyan);}
+    .inp::placeholder{color:var(--text-muted);}
+    .btn-sm{
+      padding:11px 16px;border-radius:10px;border:1px solid var(--cyan);
+      background:rgba(6,182,212,0.08);color:var(--cyan);font-size:12.5px;font-weight:700;
+      font-family:inherit;cursor:pointer;white-space:nowrap;transition:all 0.2s;
+    }
+    .btn-sm:hover{background:rgba(6,182,212,0.18);}
+    .mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .mode-card{
+      padding:16px 12px;text-align:center;background:var(--glass);
+      border:1px solid var(--glass-border);border-radius:14px;cursor:pointer;
+      transition:all 0.2s;user-select:none;
+    }
+    .mode-card:hover{border-color:rgba(6,182,212,0.3);transform:translateY(-2px);}
+    .mode-card.active{border-color:var(--cyan);background:rgba(6,182,212,0.08);box-shadow:0 0 18px rgba(6,182,212,0.12);}
+    .mode-icon{font-size:26px;margin-bottom:6px;}
+    .mode-name{font-size:12.5px;font-weight:700;}
+    .mode-desc{font-size:10.5px;color:var(--text-muted);margin-top:3px;line-height:1.4;}
+    .sess-row{display:flex;gap:10px;}
+    .btn-start{
+      flex:1;padding:14px;background:linear-gradient(135deg,var(--cyan),var(--blue));
+      border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;
+      font-family:inherit;cursor:pointer;transition:all 0.2s;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      box-shadow:0 4px 16px rgba(6,182,212,0.25);
+    }
+    .btn-start:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(6,182,212,0.35);}
+    .btn-start:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
+    .btn-stop{
+      padding:14px 20px;border-radius:12px;border:1px solid var(--glass-border);
+      background:var(--glass);color:var(--text);font-size:13px;font-weight:600;
+      font-family:inherit;cursor:pointer;transition:all 0.2s;
+    }
+    .btn-stop:hover:not(:disabled){border-color:var(--red);color:var(--red);}
+    .btn-stop:disabled{opacity:0.3;cursor:not-allowed;}
+    .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+    .metric-card{padding:13px 15px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;}
+    .metric-label{font-size:10.5px;color:var(--text-muted);font-weight:500;}
+    .metric-val{font-size:26px;font-weight:800;margin-top:1px;font-family:'JetBrains Mono',monospace;color:var(--cyan);line-height:1.1;}
+    .metric-val.warn{color:var(--amber);}
+    .metric-val.good{color:var(--green);}
+    .metric-unit{font-size:10px;color:var(--text-muted);}
+    .filler-box{padding:13px 15px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;}
+    .filler-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:22px;}
+    .filler-chip{padding:3px 10px;border-radius:20px;font-size:11.5px;font-family:'JetBrains Mono',monospace;font-weight:600;border:1px solid var(--amber);color:var(--amber);display:flex;align-items:center;gap:5px;}
+    .filler-chip .fc{background:rgba(245,158,11,0.2);padding:0 5px;border-radius:8px;font-size:10px;}
+    .transcript-box{
+      padding:13px 15px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;
+      font-size:12.5px;line-height:1.65;color:var(--text-muted);
+      min-height:72px;max-height:110px;overflow-y:auto;
+    }
+    .transcript-box::-webkit-scrollbar{width:3px;}
+    .transcript-box::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:4px;}
+    .tf{color:var(--amber);font-weight:600;}
+    .ti{color:var(--text-muted);font-style:italic;}
+
+    /* ── FOOTER ── */
+    .footer{
+      padding:9px 28px;display:flex;align-items:center;justify-content:space-between;
+      border-top:1px solid var(--glass-border);background:rgba(5,10,20,0.6);
+      backdrop-filter:blur(12px);flex-shrink:0;
+    }
+    .foot-indicators{display:flex;align-items:center;gap:18px;}
+    .ind{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-muted);}
+    .ind-dot{width:6px;height:6px;border-radius:50%;background:var(--glass-border);transition:background 0.3s;}
+    .ind-dot.on{background:var(--green);animation:pdot 1.8s infinite;}
+    .foot-right{font-size:10.5px;color:var(--text-muted);}
+
+    /* ── CAMERA PiP ── */
+    .cam-pip{
+      position:fixed;bottom:22px;right:22px;width:158px;height:118px;
+      border-radius:13px;overflow:hidden;border:1.5px solid var(--glass-border);
+      background:#000;display:none;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    }
+    .cam-pip video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+    .cam-label{position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,0.55);padding:2px 7px;border-radius:5px;}
+
+    /* ── AVATAR LOADING OVERLAY ── */
+    .avatar-load{
+      position:absolute;inset:0;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;z-index:5;pointer-events:none;
+    }
+    .spin-ring{
+      width:34px;height:34px;border-radius:50%;
+      border:2px solid rgba(59,130,246,0.20);
+      border-top-color:#3b82f6;
+      animation:spin 0.85s linear infinite;
+    }
+    .load-label{margin-top:12px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:rgba(100,116,139,0.75);}
+    .load-err{color:#ef4444;font-size:12px;text-align:center;padding:20px;line-height:1.6;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── SR WARNING BANNER ── */
+    .sr-warn{
+      position:absolute;top:56px;left:50%;transform:translateX(-50%);
+      background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
+      color:#f59e0b;font-size:11.5px;padding:6px 16px;border-radius:20px;
+      z-index:10;white-space:nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🎤</div>
+    <span class="logo-text">SpeakIQ</span>
+    <span class="logo-tag">Speak like you mean it.</span>
+  </div>
+  <div class="header-right">
+    <div class="session-timer" id="timerEl">00:00</div>
+    <div class="api-status" onclick="window.saveApiKey && document.getElementById('apiKeyInput').focus()">
+      <div class="api-dot" id="apiDot"></div>
+      <span id="apiLabel">No API Key</span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT: AI FACE -->
+  <div class="face-panel">
+    <canvas id="faceCanvas"></canvas>
+
+    <!-- Scan corner overlays -->
+    <div class="face-ui">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+    </div>
+
+    <!-- Bottom HUD -->
+    <div class="face-bottom">
+      <div class="ai-mode-chip" id="modeChip">Idle</div>
+      <div class="speech-bubble" id="speechBubble">
+        Ready to coach you. Select a mode and press <strong>Start Session</strong>.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CONTROLS -->
+  <div class="controls-panel">
+
+    <div>
+      <div class="sec-label">OpenAI API Key</div>
+      <div class="api-row">
+        <input type="password" class="inp" id="apiKeyInput" placeholder="sk-...  (required for AI feedback + voice)">
+        <button class="btn-sm" onclick="window.saveApiKey()">Connect</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Session Mode</div>
+      <div class="mode-grid">
+        <div class="mode-card active" id="mode-presentation" onclick="window.setMode('presentation')">
+          <div class="mode-icon">🎤</div>
+          <div class="mode-name">Presentation</div>
+          <div class="mode-desc">Clarity, pacing, eye contact</div>
+        </div>
+        <div class="mode-card" id="mode-debate" onclick="window.setMode('debate')">
+          <div class="mode-icon">⚖️</div>
+          <div class="mode-name">Debate</div>
+          <div class="mode-desc">Arguments, logic, rebuttals</div>
+        </div>
+        <div class="mode-card" id="mode-interview" onclick="window.setMode('interview')">
+          <div class="mode-icon">💼</div>
+          <div class="mode-name">Interview</div>
+          <div class="mode-desc">Confidence, STAR method</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Session</div>
+      <div class="sess-row">
+        <button class="btn-start" id="startBtn" onclick="window.startSession()">▶&nbsp; Start Session</button>
+        <button class="btn-stop"  id="stopBtn"  onclick="window.stopSession()" disabled>■ Stop</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Live Metrics</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Speaking Pace</div>
+          <div class="metric-val" id="mWpm">—</div>
+          <div class="metric-unit">words / min</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Eye Contact</div>
+          <div class="metric-val" id="mEye">—</div>
+          <div class="metric-unit">% on-camera</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Filler Words</div>
+          <div class="metric-val" id="mFiller">0</div>
+          <div class="metric-unit">detected total</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Confidence</div>
+          <div class="metric-val" id="mConf">—</div>
+          <div class="metric-unit">score</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Filler Word Tracker</div>
+      <div class="filler-box">
+        <div class="filler-chips" id="fillerChips">
+          <span style="font-size:11.5px;color:var(--text-muted)">None detected yet</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Live Transcript</div>
+      <div class="transcript-box" id="transcriptBox">
+        <span style="color:var(--text-muted)">Transcript will appear here when session starts…</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="foot-indicators">
+    <div class="ind"><div class="ind-dot" id="dotCam"></div> Camera</div>
+    <div class="ind"><div class="ind-dot" id="dotMic"></div> Microphone</div>
+    <div class="ind"><div class="ind-dot" id="dotAI"></div>  AI Coach</div>
+    <div class="ind"><div class="ind-dot" id="dotSpeech"></div> Speech API</div>
+  </div>
+  <div class="foot-right">SpeakIQ v2.1 — GPU Particle Avatar &nbsp;|&nbsp; Rodin Mesh · WebAudio TTS · GPT-4o Streaming</div>
+</footer>
+
+<!-- Camera PiP -->
+<div class="cam-pip" id="camPip">
+  <video id="camVideo" autoplay muted playsinline></video>
+  <div class="cam-label">You</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SPEAKIQ — THREE.JS GPU PARTICLE AVATAR
+     ~30,000 silver dots on a 3D head mesh.
+     GLSL simplex noise waves. UnrealBloom post-processing.
+     Audio-reactive jaw. Mouse-tracked 3D head rotation.
+════════════════════════════════════════════════════════════ -->
+<script type="module">
+'use strict';
+
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { FaceLandmarker, FilesetResolver }
+  from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+
+// ═══════════════════════════════════════════════════════════════
+// THREE.JS SETUP
+// ═══════════════════════════════════════════════════════════════
+
+const canvas   = document.getElementById('faceCanvas');
+const panel    = canvas.parentElement;
+let W = panel.clientWidth, H = panel.clientHeight;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W, H, false);
+renderer.setClearColor(0x000308, 1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.25;
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, W / H, 0.01, 100);
+camera.position.set(0, 0.02, 2.6);
+camera.lookAt(0, 0.02, 0);
+
+// ── Post-processing: cinematic bloom ─────────────────────────
+const composer    = new EffectComposer(renderer);
+const renderPass  = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloom = new UnrealBloomPass(
+  new THREE.Vector2(W, H),
+  0.75,  // strength  — Blender-style controlled glow
+  0.38,  // radius    — tight halo, not spreading
+  0.22   // threshold — only the white rim particles bloom
+);
+composer.addPass(bloom);
+
+// ── Resize handler ───────────────────────────────────────────
+const ro = new ResizeObserver(() => {
+  W = panel.clientWidth; H = panel.clientHeight;
+  renderer.setSize(W, H, false);
+  composer.setSize(W, H);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+});
+ro.observe(panel);
+
+// ═══════════════════════════════════════════════════════════════
+// GLSL SHADERS
+// ═══════════════════════════════════════════════════════════════
+
+const vertexShader = /* glsl */`
+// ── Stefan Gustavson's 3D simplex noise ──────────────────────
+vec3 _mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
+vec4 _mod289(vec4 x){return x-floor(x*(1./289.))*289.;}
+vec4 _permute(vec4 x){return _mod289(((x*34.)+1.)*x);}
+vec4 _tis(vec4 r){return 1.79284291400159-.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1./6.,1./3.);
+  const vec4 D=vec4(0.,.5,1.,2.);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.-g;
+  vec3 i1=min(g.xyz,l.zxy);
+  vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=_mod289(i);
+  vec4 p=_permute(_permute(_permute(
+    i.z+vec4(0.,i1.z,i2.z,1.))
+    +i.y+vec4(0.,i1.y,i2.y,1.))
+    +i.x+vec4(0.,i1.x,i2.x,1.));
+  float n_=.142857142857;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.*x_);
+  vec4 x2_=x_*ns.x+ns.yyyy;
+  vec4 y2_=y_*ns.x+ns.yyyy;
+  vec4 h=1.-abs(x2_)-abs(y2_);
+  vec4 b0=vec4(x2_.xy,y2_.xy);
+  vec4 b1=vec4(x2_.zw,y2_.zw);
+  vec4 s0=floor(b0)*2.+1.;
+  vec4 s1=floor(b1)*2.+1.;
+  vec4 sh=-step(h,vec4(0.));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=_tis(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);
+  m=m*m;
+  return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+
+// ── Custom attributes ────────────────────────────────────────
+attribute float aRegion;     // 0=face 1=back 2=neck 3=eyeL 4=eyeR 5=mouth 6=trail 7=ring
+attribute float aBaseBright;
+attribute vec3  aBaseNorm;
+attribute float aBaseNY;     // normalized y position on face
+
+// ── Uniforms ─────────────────────────────────────────────────
+uniform float uTime;
+uniform float uMouthAmp;    // 0-1  audio-reactive
+uniform float uListenGlow;  // 0-1  eye brightness
+uniform float uThinkWave;   // 0-1  thinking speed
+uniform float uIdleAmp;     // 0-1  breathing
+uniform float uHeadYaw;     // radians — mouse left/right
+uniform float uHeadPitch;   // radians — mouse up/down
+uniform float uHeadBob;     // world-y offset (subtle breathing bob)
+uniform float uEyeFlash;    // 0-1 flash on filler word
+uniform float uStateGlow;   // 0-1 whole-face ambient state color
+uniform vec3  uStateColor;  // RGB state accent (blue=listen, cyan=speak, purple=analyze)
+
+varying float vBright;
+varying float vAlpha;
+varying float vRegion;
+varying float vGlow;
+varying vec3  vStateCol;
+
+void main(){
+  vec3 pos=position;
+  vec3 nrm=normalize(aBaseNorm);
+
+  // ── HEADPHONE RING: rotate with head, bright cyan pulse ──
+  if(aRegion==7.){
+    float cy2=cos(uHeadYaw), sy2=sin(uHeadYaw);
+    float cp2=cos(uHeadPitch),sp2=sin(uHeadPitch);
+    vec3 rp=vec3(pos.x*cy2+pos.z*sy2, pos.y, -pos.x*sy2+pos.z*cy2);
+    rp=vec3(rp.x, rp.y*cp2-rp.z*sp2, rp.y*sp2+rp.z*cp2);
+    rp.y+=uHeadBob;
+    vec4 mv7=modelViewMatrix*vec4(rp,1.);
+    gl_Position=projectionMatrix*mv7;
+    gl_PointSize=3.0*(4.0/max(-mv7.z,0.1));
+    float pulse=0.7+0.3*sin(uTime*2.8);
+    vBright=pulse*(0.6+uStateGlow*0.4);
+    vAlpha=0.95;
+    vRegion=7.;
+    vGlow=pulse;
+    vStateCol=uStateColor;
+    return;
+  }
+
+  // ── TRAILS: drift independently in noise field ───────────
+  if(aRegion==6.){
+    float ts=uTime*0.25;
+    pos.x+=snoise(vec3(pos.yz*0.6,ts))*0.10;
+    pos.y+=snoise(vec3(pos.xz*0.6,ts+3.1))*0.08;
+    pos.z+=snoise(vec3(pos.xy*0.6,ts+6.3))*0.06;
+    pos.z-=uTime*0.012; // slow drift backwards
+    // wrap-around so trails don't disappear
+    if(pos.z<-2.5) pos.z+=2.5;
+
+    vec4 mv=modelViewMatrix*vec4(pos,1.);
+    gl_Position=projectionMatrix*mv;
+    gl_PointSize=1.8*(4.0/max(-mv.z,0.1));
+    float fade=smoothstep(-2.2,-0.5,pos.z);
+    vBright=0.18*fade+uStateGlow*0.08*fade;
+    vAlpha=fade*0.65;
+    vRegion=6.;
+    vGlow=0.;
+    vStateCol=uStateColor;
+    return;
+  }
+
+  // ── HEAD ROTATION (yaw=horizontal, pitch=vertical) ──────
+  float cy=cos(uHeadYaw), sy=sin(uHeadYaw);
+  float cp=cos(uHeadPitch),sp=sin(uHeadPitch);
+  // Yaw around Y
+  vec3 p1=vec3(pos.x*cy+pos.z*sy, pos.y, -pos.x*sy+pos.z*cy);
+  // Pitch around X
+  vec3 p2=vec3(p1.x, p1.y*cp-p1.z*sp, p1.y*sp+p1.z*cp);
+  // Rotate normal too
+  vec3 n1=vec3(nrm.x*cy+nrm.z*sy, nrm.y, -nrm.x*sy+nrm.z*cy);
+  vec3 n2=vec3(n1.x, n1.y*cp-n1.z*sp, n1.y*sp+n1.z*cp);
+  pos=p2; nrm=n2;
+
+  // ── IDLE BREATHING BOB ──────────────────────────────────
+  pos.y+=uHeadBob;
+
+  // ── NOISE SURFACE WAVE ──────────────────────────────────
+  // ── RIM LIGHTING — bright silhouette edges, like Blender render ──
+  // Normal in view-space: nrmView.z ≈ +1 = facing camera, 0 = silhouette edge
+  vec3 nrmView = normalize(mat3(modelViewMatrix) * nrm);
+  float rim = smoothstep(0.38, 0.0, nrmView.z) * step(0.0, nrmView.z);
+  rim = rim * rim;   // sharpen falloff
+
+  // ── NOISE SURFACE WAVE ──────────────────────────────────────
+  // aBaseNY is world-Y: -0.60 (neck) … +0.60 (crown), nose ≈ 0
+  float wt=uTime*(0.32+uThinkWave*0.90);
+  float wave =snoise(vec3(position.xy*1.9, wt))*0.018;
+  wave+=snoise(vec3(position.xy*4.5, wt*1.8))*0.007;
+
+  // Thinking: fast burst on forehead & temples (world-Y > 0.12 = upper face)
+  float foreheadMask=smoothstep(0.10, 0.32, aBaseNY);
+  float templeMask=smoothstep(0.28, 0.44, abs(position.x))*foreheadMask;
+  wave+=snoise(vec3(position.xy*6.0, uTime*2.8))*0.016*uThinkWave*foreheadMask;
+  wave+=snoise(vec3(position.xy*9.0, uTime*4.5))*0.008*uThinkWave*templeMask;
+
+  // ── MOUTH / JAW PULSE (audio reactive) ──────────────────
+  float mouthMask=(aRegion==5.)?1.:0.;
+  // Jaw ripple zone: world-Y in (-0.05 … -0.33) = below nose, above neck
+  float jawMask=smoothstep(-0.05,-0.16,aBaseNY)*smoothstep(-0.33,-0.22,aBaseNY);
+  float mouthWave=sin(uTime*14.0+length(position.xy)*9.0)*uMouthAmp*0.032*mouthMask;
+  float jawRipple=sin(uTime*11.0+position.x*10.0)*uMouthAmp*0.018*jawMask;
+  wave+=mouthWave+jawRipple;
+
+  pos+=nrm*(wave*uIdleAmp);
+
+  vec4 mv=modelViewMatrix*vec4(pos,1.);
+  gl_Position=projectionMatrix*mv;
+
+  // ── POINT SIZE — perspective-correct
+  float sz=(aRegion==2.)?1.4:(aRegion==1.)?1.4:2.2;
+  gl_PointSize=sz*(4.0/max(-mv.z,0.1));
+
+  // ── PER-POINT BRIGHTNESS ─────────────────────────────────
+  float eyeMask=(aRegion==3.||aRegion==4.)?1.:0.;
+  float eyeGlow=eyeMask*(uListenGlow*0.85+uEyeFlash*0.65);
+  float mGlow  =mouthMask*uMouthAmp*0.50+jawMask*uMouthAmp*0.18;
+  // Base from Python Z-depth model; rim drives the bright white silhouette
+  float b=pow(aBaseBright, 0.75) * 1.0;
+  b = b + rim * 0.88;   // rim brings silhouette to white
+  float stateLift=uStateGlow*0.28*(1.0-aBaseBright*0.5);
+  vBright=clamp(b*(1.+eyeGlow+mGlow)+stateLift+uListenGlow*0.04, 0.0, 1.8);
+  vAlpha=smoothstep(0.01,0.20,aBaseBright)+0.04+rim*0.30;
+  vRegion=aRegion;
+  vGlow=eyeGlow+mGlow*0.4+uStateGlow*0.15+rim*0.35;
+  vStateCol=uStateColor;
+}
+`;
+
+const fragmentShader = /* glsl */`
+varying float vBright;
+varying float vAlpha;
+varying float vRegion;
+varying float vGlow;
+varying vec3  vStateCol;
+
+void main(){
+  vec2 uv=gl_PointCoord-0.5;
+  float d=length(uv);
+  if(d>0.5) discard;
+
+  // Tight core disc + soft outer halo (like Blender icospheres)
+  float core  = smoothstep(0.42, 0.0,  d);
+  float halo  = smoothstep(0.50, 0.20, d) * 0.32;
+  float shape = clamp(core + halo, 0.0, 1.0);
+
+  // ── Blender-style color ramp: deep navy → cool silver → pure white ──
+  float b = clamp(vBright, 0.0, 1.0);
+
+  // 4-stop ramp — purple-indigo fill matching Blender particle render:
+  //  0.00 → near-black void
+  //  0.35 → deep indigo-blue  (#14148A → 0.08,0.08,0.54)
+  //  0.65 → medium blue-violet (#5050C8 → 0.31,0.31,0.78)
+  //  1.00 → pure white (rim glow)
+  vec3 col;
+  if(b < 0.35){
+    col = mix(vec3(0.01, 0.01, 0.08), vec3(0.08, 0.08, 0.52), b/0.35);
+  } else if(b < 0.65){
+    col = mix(vec3(0.08, 0.08, 0.52), vec3(0.32, 0.32, 0.80), (b-0.35)/0.30);
+  } else {
+    col = mix(vec3(0.32, 0.32, 0.80), vec3(0.96, 0.97, 1.00), (b-0.65)/0.35);
+  }
+
+  // State color tint on shadow side (adds blue/cyan/purple based on AI mode)
+  if(vGlow > 0.01){
+    col = mix(col, vStateCol, vGlow * 0.55);
+  }
+
+  // Eye regions: sharp blue-white flash
+  if((vRegion==3.||vRegion==4.)&&vGlow>0.02){
+    col = mix(col, vec3(0.70, 0.88, 1.00), vGlow * 0.70);
+  }
+
+  // Headphone ring: pure state color glow
+  if(vRegion==7.){
+    col = mix(vec3(0.40, 0.75, 1.00), vStateCol, 0.5);
+    col = mix(col, vec3(1.0), vBright * 0.4);
+  }
+
+  // Trail dots: Blender-style blue star particles
+  if(vRegion==6.){
+    col = mix(vec3(0.10, 0.18, 0.42), vStateCol * 0.8, 0.3);
+    col = mix(col, vec3(0.85, 0.92, 1.0), vBright * 0.6);
+  }
+
+  // Back of head: very dark, barely visible
+  if(vRegion==1.){
+    col *= 0.25;
+  }
+
+  float alpha = shape * clamp(vAlpha, 0.05, 0.98);
+  gl_FragColor = vec4(col, alpha * b + alpha * 0.08);
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════
+// SHADER MATERIAL + SCENE  (geometry loaded async from .bin)
+// ═══════════════════════════════════════════════════════════════
+
+const uniforms = {
+  uTime:       { value: 0 },
+  uMouthAmp:   { value: 0 },
+  uListenGlow: { value: 0 },
+  uThinkWave:  { value: 0 },
+  uIdleAmp:    { value: 1 },
+  uHeadYaw:    { value: 0 },
+  uHeadPitch:  { value: 0 },
+  uHeadBob:    { value: 0 },
+  uEyeFlash:   { value: 0 },
+  uStateGlow:  { value: 0 },
+  uStateColor: { value: new THREE.Vector3(0.35, 0.60, 1.00) },
+};
+
+const headMat = new THREE.ShaderMaterial({
+  vertexShader,
+  fragmentShader,
+  uniforms,
+  transparent: true,
+  blending:    THREE.NormalBlending,
+  depthWrite:  false,
+  depthTest:   false,
+});
+
+// ── Deterministic RNG for trails ─────────────────────────────
+function mulberry32(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ── Load the precomputed Rodin mesh particles from binary ─────
+// Format per point (9 × float32): x y z  nx ny nz  brightness  region  worldY
+async function loadHeadGeometry() {
+  const resp = await fetch('head_particles.bin');
+  const buf  = await resp.arrayBuffer();
+  const data = new Float32Array(buf);
+  const STRIDE = 9;
+  const N = data.length / STRIDE;
+
+  const posArr    = new Float32Array(N * 3);
+  const normArr   = new Float32Array(N * 3);
+  const brightArr = new Float32Array(N);
+  const regionArr = new Float32Array(N);
+  const nyArr     = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    const base = i * STRIDE;
+    posArr[i*3]   = data[base];     posArr[i*3+1] = data[base+1]; posArr[i*3+2] = data[base+2];
+    normArr[i*3]  = data[base+3];   normArr[i*3+1]= data[base+4]; normArr[i*3+2]= data[base+5];
+    brightArr[i]  = data[base+6];
+    regionArr[i]  = data[base+7];
+    nyArr[i]      = data[base+8];
+  }
+
+  // ── Append: particle TRAILS ───────────────────────────────
+  const N_TRAIL = 8000;
+  const rng     = mulberry32(73841);
+  const tPos=[], tNorm=[], tBright=[], tRegion=[], tNY=[];
+  for (let i = 0; i < N_TRAIL; i++) {
+    const z      = -(rng() * 2.2 + 0.20);
+    const spread = (Math.abs(z) + 0.1) * 0.50;
+    tPos.push(  (rng()-0.5)*spread*2.6, (rng()-0.5)*spread*3.0, z );
+    tNorm.push(0, 0, 1);
+    tBright.push(rng() * 0.30 + 0.05);
+    tRegion.push(6);
+    tNY.push(0);
+  }
+
+  // ── Append: HEADPHONE RINGS (matched to actual ear positions) ─
+  // Ear at Three.js coords: X=±0.380, Y=0.162, Z=-0.056
+  const RING_N = 100;
+  const RING_R = 0.090;
+  const earXs  = [ 0.380, -0.380];
+  const earNxs = [ 1,     -1    ];
+  const EAR_Y  = 0.162, EAR_Z = -0.056;
+  for (let e = 0; e < 2; e++) {
+    for (let i = 0; i < RING_N; i++) {
+      const ang = (i / RING_N) * Math.PI * 2;
+      tPos.push(  earXs[e],
+                  EAR_Y + RING_R * Math.sin(ang),
+                  EAR_Z + RING_R * Math.cos(ang) * 0.65 );
+      tNorm.push(earNxs[e], 0, 0);
+      tBright.push(0.85);
+      tRegion.push(7);
+      tNY.push(EAR_Y);
+    }
+  }
+
+  // ── Merge into final typed arrays ────────────────────────
+  const totalN = N + N_TRAIL + RING_N * 2;
+  const mPos    = new Float32Array(totalN * 3);
+  const mNorm   = new Float32Array(totalN * 3);
+  const mBright = new Float32Array(totalN);
+  const mRegion = new Float32Array(totalN);
+  const mNY     = new Float32Array(totalN);
+
+  mPos.set(posArr);       mPos.set(   new Float32Array(tPos),    N*3);
+  mNorm.set(normArr);     mNorm.set(  new Float32Array(tNorm),   N*3);
+  mBright.set(brightArr); mBright.set(new Float32Array(tBright), N);
+  mRegion.set(regionArr); mRegion.set(new Float32Array(tRegion), N);
+  mNY.set(nyArr);         mNY.set(    new Float32Array(tNY),     N);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position',    new THREE.Float32BufferAttribute(mPos,    3));
+  geo.setAttribute('aBaseNorm',   new THREE.Float32BufferAttribute(mNorm,   3));
+  geo.setAttribute('aBaseBright', new THREE.Float32BufferAttribute(mBright, 1));
+  geo.setAttribute('aRegion',     new THREE.Float32BufferAttribute(mRegion, 1));
+  geo.setAttribute('aBaseNY',     new THREE.Float32BufferAttribute(mNY,     1));
+  return geo;
+}
+
+// ── Avatar loading overlay ────────────────────────────────────
+const loadOverlay = document.createElement('div');
+loadOverlay.className = 'avatar-load';
+loadOverlay.innerHTML = '<div class="spin-ring"></div><div class="load-label">Loading Avatar…</div>';
+document.querySelector('.face-panel').appendChild(loadOverlay);
+
+// Bootstrap: load geometry then add to scene
+loadHeadGeometry().then(geo => {
+  const headMesh = new THREE.Points(geo, headMat);
+  scene.add(headMesh);
+  loadOverlay.remove();
+}).catch(err => {
+  console.error('head_particles.bin load failed:', err);
+  loadOverlay.innerHTML =
+    '<div class="load-err">⚠️ Avatar failed to load<br>' +
+    '<span style="font-size:10px;color:#64748b">head_particles.bin not found in SpeakIQ folder</span></div>';
+  say('Avatar mesh missing. Place head_particles.bin in the SpeakIQ folder and refresh.');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MOUSE GAZE TRACKING
+// ═══════════════════════════════════════════════════════════════
+
+let tgYaw = 0, tgPitch = 0;
+let smYaw = 0, smPitch = 0;
+
+document.addEventListener('mousemove', e => {
+  const r  = panel.getBoundingClientRect();
+  const cx = r.left + r.width  / 2;
+  const cy = r.top  + r.height / 2;
+  // Mouse left → head turns right (positive yaw)
+  tgYaw   = Math.max(-0.30, Math.min(0.30,  (e.clientX - cx) / (r.width  * 1.3) * 0.45));
+  tgPitch = Math.max(-0.18, Math.min(0.18, -(e.clientY - cy) / (r.height * 1.3) * 0.30));
+});
+
+// ═══════════════════════════════════════════════════════════════
+// STATE MACHINE + UNIFORM TARGETS
+// ═══════════════════════════════════════════════════════════════
+
+// Lerp helpers
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+let faceMode    = 'idle';      // idle | listening | analyzing | speaking
+let tMouthAmp   = 0;
+let tListenGlow = 0;
+let tThinkWave  = 0;
+let eyeFlashT   = 0;
+let tStateGlow  = 0;
+let tStateColor = [0.35, 0.60, 1.00]; // [R,G,B]
+
+// State color palette — matches Blender render aesthetic
+const STATE_COLORS = {
+  idle:      [0.25, 0.40, 0.75],  // muted silver-blue
+  listening: [0.30, 0.55, 1.00],  // bright cool blue
+  analyzing: [0.55, 0.30, 1.00],  // deep purple  (thinking)
+  speaking:  [0.20, 0.80, 0.90],  // cyan-teal    (voice output)
+};
+
+function setFaceState(mode) {
+  faceMode = mode;
+  tStateColor = STATE_COLORS[mode] || STATE_COLORS.idle;
+  switch (mode) {
+    case 'idle':
+      tMouthAmp = 0; tListenGlow = 0; tThinkWave = 0; tStateGlow = 0.08;
+      break;
+    case 'listening':
+      tMouthAmp = 0; tListenGlow = 0.75; tThinkWave = 0.05; tStateGlow = 0.55;
+      break;
+    case 'analyzing':
+      tMouthAmp = 0; tListenGlow = 0.35; tThinkWave = 0.85; tStateGlow = 0.70;
+      break;
+    case 'speaking':
+      tListenGlow = 0.55; tThinkWave = 0.10; tStateGlow = 0.65;
+      break;
+  }
+}
+
+// strength: 1.5 = filler warning (strong), 0.5 = nod acknowledgement (subtle)
+function flashEyes(strength = 1.0) {
+  eyeFlashT = strength;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════════
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t  = clock.getElapsedTime();
+  const dt = Math.min(clock.getDelta(), 0.05); // capped
+
+  // Smooth gaze tracking
+  smYaw   = lerp(smYaw,   tgYaw,   0.045);
+  smPitch = lerp(smPitch, tgPitch, 0.045);
+
+  // Smooth state uniforms
+  uniforms.uMouthAmp.value   = lerp(uniforms.uMouthAmp.value,   tMouthAmp,   0.08);
+  uniforms.uListenGlow.value = lerp(uniforms.uListenGlow.value, tListenGlow, 0.06);
+  uniforms.uThinkWave.value  = lerp(uniforms.uThinkWave.value,  tThinkWave,  0.05);
+  uniforms.uStateGlow.value  = lerp(uniforms.uStateGlow.value,  tStateGlow,  0.04);
+  // Smooth state color transition
+  const sc = uniforms.uStateColor.value;
+  sc.x = lerp(sc.x, tStateColor[0], 0.03);
+  sc.y = lerp(sc.y, tStateColor[1], 0.03);
+  sc.z = lerp(sc.z, tStateColor[2], 0.03);
+
+  // Eye flash decay
+  eyeFlashT = Math.max(0, eyeFlashT - 0.025);
+  uniforms.uEyeFlash.value = eyeFlashT;
+
+  // Idle bob (subtle y-translation, like breathing)
+  uniforms.uHeadBob.value  = Math.sin(t * 1.35) * 0.012;
+
+  // Update per-frame uniforms
+  uniforms.uTime.value      = t;
+  uniforms.uHeadYaw.value   = smYaw;
+  uniforms.uHeadPitch.value = smPitch;
+
+  composer.render();
+}
+animate();
+
+// ═══════════════════════════════════════════════════════════════
+// APP LOGIC — Speech Recognition, GPT-4o, TTS
+// ═══════════════════════════════════════════════════════════════
+
+let currentMode    = 'presentation';
+let sessionOn      = false;
+let sessionStart   = 0;
+let timerInt       = null;
+let apiKey         = '';
+let stream         = null;
+let stopFadeTimer1 = null;   // Fix: race-condition guards for stopSession timeouts
+let stopFadeTimer2 = null;
+let gptController  = null;   // Fix: AbortController for in-flight GPT requests
+
+const FILLERS = ['um','uh','like','basically','literally','you know','right',
+                 'actually','honestly','kind of','sort of','i mean','so yeah'];
+const fillerCounts = {};
+let fullTranscript = '';
+let wpmBucket      = [];
+let lastFbTime     = 0;
+let ttsAudio       = null;
+let ttsMouthInt    = null;
+let speechRec      = null;
+
+// ── Mode select ──────────────────────────────────────────────
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('mode-' + m).classList.add('active');
+  setChip('idle');
+  say({ presentation:"Presentation mode. I'll track your clarity, pacing and eye contact.",
+        debate:       "Debate mode. Let's see your argument structure and rebuttal sharpness.",
+        interview:    "Interview mode. I'll coach you on confidence, structure, and the STAR method." }[m]);
+}
+
+// ── API key (persisted in localStorage) ──────────────────────
+function saveApiKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (!v.startsWith('sk-')) { alert('Enter a valid OpenAI key starting with sk-'); return; }
+  apiKey = v;
+  try { localStorage.setItem('speakiq_apikey', v); } catch(_) {}
+  document.getElementById('apiDot').classList.add('on');
+  document.getElementById('apiLabel').textContent = 'OpenAI Connected';
+  document.getElementById('dotAI').classList.add('on');
+  say("OpenAI connected. I'm ready — let's work on your speaking.");
+  flashEyes(0.8);
+}
+
+// Restore persisted key on load
+(function restoreKey() {
+  try {
+    const saved = localStorage.getItem('speakiq_apikey');
+    if (saved && saved.startsWith('sk-')) {
+      document.getElementById('apiKeyInput').value = saved;
+      apiKey = saved;
+      document.getElementById('apiDot').classList.add('on');
+      document.getElementById('apiLabel').textContent = 'OpenAI Connected';
+      document.getElementById('dotAI').classList.add('on');
+    }
+  } catch(_) {}
+})();
+
+// ── Mode chip + speech bubble ────────────────────────────────
+function setChip(mode) {
+  setFaceState(mode);
+  const chip = document.getElementById('modeChip');
+  chip.textContent = { idle:'Idle', listening:'Listening', analyzing:'Analyzing', speaking:'Speaking' }[mode] || mode;
+  chip.className   = 'ai-mode-chip ' + mode;
+}
+
+function say(text, typing = false) {
+  const el = document.getElementById('speechBubble');
+  if (typing) {
+    el.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  } else {
+    el.innerHTML = text || '';
+  }
+}
+
+// ── Session ──────────────────────────────────────────────────
+async function startSession() {
+  if (sessionOn) return;
+  // Cancel any pending stop-fade timers so they don't clobber the new session state
+  if (stopFadeTimer1) { clearTimeout(stopFadeTimer1); stopFadeTimer1 = null; }
+  if (stopFadeTimer2) { clearTimeout(stopFadeTimer2); stopFadeTimer2 = null; }
+  sessionOn = true;
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled  = false;
+  document.getElementById('timerEl').classList.add('running');
+  document.getElementById('transcriptBox').innerHTML = '';
+
+  Object.keys(fillerCounts).forEach(k => delete fillerCounts[k]);
+  fullTranscript = ''; wpmBucket = []; lastFbTime = 0;
+  updateFillerChips();
+  ['mWpm','mEye','mConf'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('mFiller').textContent = '0';
+
+  say(null, true);
+  setTimeout(() => say("I'm watching. Take a breath — begin whenever you're ready."), 1000);
+  setChip('listening');
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+    document.getElementById('camVideo').srcObject = stream;
+    document.getElementById('camPip').style.display = 'block';
+    document.getElementById('dotCam').classList.add('on');
+    document.getElementById('dotMic').classList.add('on');
+    // Start MediaPipe face analysis once camera is live
+    startMPLoop();
+    // Reset metric display to live mode
+    ['mEye','mConf'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '…';
+      el.className = 'metric-val';
+    });
+  } catch(e) {
+    console.warn('Media error:', e);
+    say('Camera access denied — eye contact tracking disabled. Microphone only.');
+  }
+
+  sessionStart = Date.now();
+  timerInt = setInterval(tickTimer, 1000);
+  startSR();
+}
+
+function stopSession() {
+  if (!sessionOn) return;
+  sessionOn = false;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled  = true;
+  document.getElementById('timerEl').classList.remove('running');
+  clearInterval(timerInt);
+  if (speechRec) { try { speechRec.stop(); } catch(e){} }
+  if (stream)    { stream.getTracks().forEach(t => t.stop()); }
+  stopMPLoop();
+  document.getElementById('camPip').style.display = 'none';
+  ['dotCam','dotMic'].forEach(id => document.getElementById(id).classList.remove('on'));
+
+  setChip('analyzing'); say(null, true);
+  stopFadeTimer1 = setTimeout(() => {
+    stopFadeTimer1 = null;
+    setChip('speaking');
+    const wpm    = document.getElementById('mWpm').textContent;
+    const ftotal = Object.values(fillerCounts).reduce((a,b) => a+b, 0);
+    say(`Session complete. ${wpm !== '—' ? 'You spoke at ' + wpm + ' WPM' : 'Good effort'} with ${ftotal} filler word${ftotal !== 1?'s':''} detected. ${apiKey ? 'Generating detailed feedback…' : 'Add your OpenAI key for AI coaching.'}`);
+    if (apiKey && fullTranscript.trim().split(' ').length > 10) callGPT(false);
+    stopFadeTimer2 = setTimeout(() => { stopFadeTimer2 = null; setChip('idle'); }, 6000);
+  }, 1600);
+}
+
+function tickTimer() {
+  const s = Math.floor((Date.now() - sessionStart) / 1000);
+  document.getElementById('timerEl').textContent =
+    String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+// ── Speech Recognition ───────────────────────────────────────
+function startSR() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    // Firefox / unsupported browser — show visible warning
+    const warn = document.createElement('div');
+    warn.className = 'sr-warn';
+    warn.textContent = '⚠️ Speech recognition not supported — use Chrome or Edge';
+    document.querySelector('.face-panel').appendChild(warn);
+    say('Your browser does not support speech recognition. Please use Chrome or Edge.');
+    return;
+  }
+  document.getElementById('dotSpeech').classList.add('on');
+  speechRec = new SR();
+  speechRec.continuous = true; speechRec.interimResults = true; speechRec.lang = 'en-US';
+
+  speechRec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) {
+        const txt = r[0].transcript.toLowerCase().trim();
+        fullTranscript += txt + ' ';
+        processText(txt); renderTranscript(); calcWPM(txt);
+        // Word-boundary filler check (consistent with processText regex)
+        const hadFiller = FILLERS.some(f => {
+          const re = new RegExp('\\b' + f.replace(/\s+/g,'\\s+') + '\\b', 'i');
+          return re.test(txt);
+        });
+        if (hadFiller) { flashEyes(1.5); }  // strong flash — filler detected
+        else           { flashEyes(0.5); }  // soft nod — good phrase acknowledged
+        checkPeriodicFB();
+      } else { interim = r[0].transcript; }
+    }
+    const box = document.getElementById('transcriptBox');
+    let el = box.querySelector('.ti');
+    if (!el) { el = document.createElement('span'); el.className = 'ti'; box.appendChild(el); }
+    el.textContent = ' ' + interim;
+    box.scrollTop = box.scrollHeight;
+  };
+
+  speechRec.onerror = e => {
+    console.warn('SR error:', e.error);
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      say('Microphone access was denied. Allow mic permission in your browser and restart the session.');
+      stopSession();
+    } else if (e.error === 'network') {
+      say('Speech API network error. Check your connection — I\'ll keep trying.');
+    }
+    // 'no-speech' and 'aborted' are non-fatal; onend will auto-restart
+  };
+
+  speechRec.onend = () => { if (sessionOn) speechRec.start(); };
+  speechRec.start();
+}
+
+function processText(txt) {
+  FILLERS.forEach(f => {
+    const re = new RegExp('\\b' + f.replace(/\s+/g,'\\s+') + '\\b', 'gi');
+    const m  = txt.match(re);
+    if (m) fillerCounts[f] = (fillerCounts[f] || 0) + m.length;
+  });
+  updateFillerChips();
+  document.getElementById('mFiller').textContent = Object.values(fillerCounts).reduce((a,b)=>a+b,0);
+}
+
+function calcWPM(txt) {
+  const now = Date.now();
+  wpmBucket.push({ n: txt.trim().split(/\s+/).length, t: now });
+  wpmBucket = wpmBucket.filter(w => now - w.t < 30000);
+  const totalWords = wpmBucket.reduce((a, w) => a + w.n, 0);
+  // Use real elapsed window (not always 30s) so early readings aren't halved
+  const windowSec = Math.min((now - sessionStart) / 1000, 30);
+  const wpm = windowSec > 2 ? Math.round(totalWords / (windowSec / 60)) : 0;
+  const el  = document.getElementById('mWpm');
+  el.textContent = wpm || '—';
+  el.className   = 'metric-val' + (wpm > 0 && (wpm < 100 || wpm > 185) ? ' warn' : wpm > 0 ? ' good' : '');
+}
+
+function renderTranscript() {
+  const box = document.getElementById('transcriptBox');
+  const ti  = box.querySelector('.ti');
+  let html  = fullTranscript;
+  FILLERS.forEach(f => {
+    const re = new RegExp('\\b(' + f.replace(/\s+/g,'\\s+') + ')\\b', 'gi');
+    html = html.replace(re, '<span class="tf">$1</span>');
+  });
+  box.innerHTML = html;
+  if (ti) box.appendChild(ti);
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateFillerChips() {
+  const el = document.getElementById('fillerChips');
+  const total = Object.values(fillerCounts).reduce((a,b)=>a+b,0);
+  if (total === 0) { el.innerHTML = '<span style="font-size:11.5px;color:var(--text-muted)">None detected yet</span>'; return; }
+  el.innerHTML = Object.entries(fillerCounts)
+    .filter(([,v])=>v>0).sort(([,a],[,b])=>b-a)
+    .map(([w,c])=>`<div class="filler-chip">"${w}" <span class="fc">${c}</span></div>`)
+    .join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2 — MediaPipe FaceLandmarker: real eye contact + confidence
+// ═══════════════════════════════════════════════════════════════
+
+let faceLandmarker  = null;   // MediaPipe model instance
+let mpFrameLoop     = null;   // rAF handle for face processing loop
+let mpReady         = false;  // true once model loaded
+let lastMpTime      = 0;      // throttle timestamp
+
+// Rolling buffers for smoothing
+const EYE_BUF  = [];          // 90-frame (~3s) eye contact readings
+const CONF_BUF = [];          // 60-frame confidence readings
+const HEAD_BUF = [];          // 30-frame head-stability readings
+
+// ── Load MediaPipe model (async, non-blocking) ────────────────
+async function initMediaPipe() {
+  try {
+    const vision = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+    );
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+        delegate: 'GPU'
+      },
+      outputFaceBlendshapes: true,
+      runningMode: 'VIDEO',
+      numFaces: 1,
+      minFaceDetectionConfidence: 0.5,
+      minFacePresenceConfidence:  0.5,
+      minTrackingConfidence:      0.5
+    });
+    mpReady = true;
+    console.log('MediaPipe FaceLandmarker ready');
+  } catch (e) {
+    console.warn('MediaPipe failed to load — metrics will be estimated:', e);
+    mpReady = false;
+  }
+}
+initMediaPipe();  // kick off immediately; resolves before user starts a session
+
+// ── Iris deviation → eye-contact score (0–1) ─────────────────
+// With refineLandmarks: left iris center = lm[468], right = lm[473]
+function calcEyeContact(lm) {
+  function irisScore(innerIdx, outerIdx, irisIdx) {
+    const inner = lm[innerIdx], outer = lm[outerIdx], iris = lm[irisIdx];
+    if (!iris) return 0.5;   // landmark absent → neutral
+    const eyeW = Math.abs(outer.x - inner.x);
+    if (eyeW < 0.005) return 0.5;
+    const cx = (inner.x + outer.x) / 2;
+    const cy = (inner.y + outer.y) / 2;
+    // Normalised deviation from eye centre; weight horizontal more
+    const dev = (Math.abs(iris.x - cx) * 1.8 + Math.abs(iris.y - cy)) / eyeW;
+    return Math.max(0, 1 - dev * 2.2);
+  }
+  // Left eye:  outer=33, inner=133, iris=468
+  // Right eye: outer=263, inner=362, iris=473
+  return (irisScore(133, 33, 468) + irisScore(362, 263, 473)) / 2;
+}
+
+// ── Blendshapes + head-pose → confidence score (40–99) ───────
+function calcConfidence(blendshapes, lm) {
+  const get = name => blendshapes.categories.find(c => c.categoryName === name)?.score ?? 0;
+
+  // Blink penalty (sustained blink = nervous/distracted)
+  const blink = (get('eyeBlinkLeft') + get('eyeBlinkRight')) / 2;
+  // Smile bonus (natural smiling = confident presenter)
+  const smile = (get('mouthSmileLeft') + get('mouthSmileRight')) / 2;
+  // Brow furrow (concentration / nervousness)
+  const furrow = get('browDownLeft') + get('browDownRight');
+
+  // Head levelness: nose tip (lm[1]) vs chin (lm[152]) x-offset
+  const noseTip = lm[1], chin = lm[152];
+  const tilt = noseTip && chin ? Math.abs(noseTip.x - chin.x) * 3.5 : 0;
+
+  // Head forward/back: nose-tip z vs forehead z (lm[10])
+  const forehead = lm[10];
+  const forward = noseTip && forehead ? Math.max(0, noseTip.z - forehead.z) * 6 : 0;
+
+  // Head stability: compare to previous frame
+  HEAD_BUF.push({ x: noseTip?.x ?? 0.5, y: noseTip?.y ?? 0.5 });
+  if (HEAD_BUF.length > 30) HEAD_BUF.shift();
+  let jitter = 0;
+  if (HEAD_BUF.length > 5) {
+    const last5 = HEAD_BUF.slice(-5);
+    const mx = last5.reduce((s,p)=>s+p.x,0)/5, my = last5.reduce((s,p)=>s+p.y,0)/5;
+    jitter = last5.reduce((s,p)=>s+Math.hypot(p.x-mx,p.y-my),0)/5 * 120;
+  }
+
+  let score = 72
+    - blink  * 18    // sustained blink is penalised
+    + smile  * 14    // smiling lifts confidence
+    - furrow * 6     // furrowed brow reduces
+    - tilt   * 12    // tilted head reduces
+    - forward* 8     // leaning back reduces
+    - jitter * 22;   // excessive movement reduces
+
+  // Bonus: WPM in ideal range (130–160) indicates confident pace
+  const wpmVal = parseInt(document.getElementById('mWpm').textContent, 10);
+  if (!isNaN(wpmVal) && wpmVal >= 120 && wpmVal <= 165) score += 6;
+
+  return Math.round(Math.max(40, Math.min(99, score)));
+}
+
+// ── Per-frame face processing (throttled to ~20 fps) ─────────
+function processFaceFrame() {
+  const video = document.getElementById('camVideo');
+  if (!mpReady || !faceLandmarker || !sessionOn) return;
+  if (video.readyState < 2 || video.paused) return;
+
+  const now = performance.now();
+  if (now - lastMpTime < 50) return;   // cap at 20 fps to avoid GPU saturation
+  lastMpTime = now;
+
+  let results;
+  try { results = faceLandmarker.detectForVideo(video, now); }
+  catch (_) { return; }
+
+  if (!results?.faceLandmarks?.length) return;
+
+  const lm = results.faceLandmarks[0];
+
+  // ── Eye contact ──────────────────────────────────────────
+  const eyeScore = calcEyeContact(lm);
+  EYE_BUF.push(eyeScore);
+  if (EYE_BUF.length > 90) EYE_BUF.shift();
+  const eyePct = Math.round(EYE_BUF.reduce((a,b)=>a+b,0) / EYE_BUF.length * 100);
+  const eyeEl = document.getElementById('mEye');
+  eyeEl.textContent = eyePct;
+  eyeEl.className   = 'metric-val' +
+    (eyePct >= 70 ? ' good' : eyePct >= 50 ? '' : ' warn');
+
+  // ── Confidence ───────────────────────────────────────────
+  if (results.faceBlendshapes?.length) {
+    const conf = calcConfidence(results.faceBlendshapes[0], lm);
+    CONF_BUF.push(conf);
+    if (CONF_BUF.length > 60) CONF_BUF.shift();
+    const smoothConf = Math.round(CONF_BUF.reduce((a,b)=>a+b,0) / CONF_BUF.length);
+    const confEl = document.getElementById('mConf');
+    confEl.textContent = smoothConf;
+    confEl.className   = 'metric-val' +
+      (smoothConf >= 70 ? ' good' : smoothConf >= 50 ? '' : ' warn');
+  }
+}
+
+// ── rAF loop: runs only while session is active ───────────────
+function startMPLoop() {
+  EYE_BUF.length = 0; CONF_BUF.length = 0; HEAD_BUF.length = 0;
+  function loop() {
+    processFaceFrame();
+    mpFrameLoop = requestAnimationFrame(loop);
+  }
+  mpFrameLoop = requestAnimationFrame(loop);
+}
+function stopMPLoop() {
+  if (mpFrameLoop) { cancelAnimationFrame(mpFrameLoop); mpFrameLoop = null; }
+}
+
+// ── GPT-4o feedback ──────────────────────────────────────────
+function checkPeriodicFB() {
+  if (!apiKey) return;
+  const now = Date.now();
+  if (now - lastFbTime > 60000 && fullTranscript.trim().split(' ').length > 25) {
+    lastFbTime = now; callGPT(true);
+  }
+}
+
+async function callGPT(interim) {
+  if (!apiKey || !fullTranscript.trim()) return;
+  // Cancel any in-flight GPT request before starting a new one
+  if (gptController) gptController.abort();
+  gptController = new AbortController();
+
+  setChip('analyzing'); say(null, true);
+  const fSummary  = Object.entries(fillerCounts).filter(([,v])=>v>0).map(([w,c])=>`"${w}"(${c}x)`).join(', ') || 'none';
+  const wpmVal    = document.getElementById('mWpm').textContent;
+  const wpmStr    = wpmVal !== '—' ? wpmVal + ' WPM' : 'not yet measured';
+  const eyeVal    = document.getElementById('mEye').textContent;
+  const eyeStr    = eyeVal !== '—' && eyeVal !== '…' ? eyeVal + '% eye contact' : 'eye contact not tracked';
+  const confVal   = document.getElementById('mConf').textContent;
+  const confStr   = confVal !== '—' && confVal !== '…' ? confVal + '/99 confidence' : 'confidence not tracked';
+  const elapsed   = Math.floor((Date.now() - sessionStart) / 1000);
+  const modeMap   = { presentation:'public speaking presentation', debate:'competitive debate', interview:'job interview' };
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      signal: gptController.signal,
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        stream: true,
+        messages: [
+          { role:'system', content:`You are SpeakIQ, a direct and encouraging AI ${modeMap[currentMode]} coach. Give feedback in 2–3 punchy sentences like a real coach talking face-to-face. Be specific and constructive.` },
+          { role:'user',   content:`Duration: ${Math.floor(elapsed/60)}m ${elapsed%60}s | Pace: ${wpmStr} | ${eyeStr} | ${confStr} | Fillers: ${fSummary}\nTranscript excerpt: "${fullTranscript.slice(-600)}"\n${interim?'Mid-session check-in.':'End-of-session summary.'}` }
+        ],
+        max_tokens: 130, temperature: 0.72
+      })
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error?.message || `HTTP ${res.status}`);
+    }
+
+    // Stream tokens into the speech bubble as they arrive
+    setChip('speaking');
+    let fb = '';
+    const reader = res.body.getReader();
+    const dec    = new TextDecoder();
+
+    outer: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of dec.decode(value).split('\n')) {
+        const s = line.trim();
+        if (!s.startsWith('data:')) continue;
+        const raw = s.slice(5).trim();
+        if (raw === '[DONE]') break outer;
+        try {
+          const delta = JSON.parse(raw).choices?.[0]?.delta?.content;
+          if (delta) { fb += delta; say(fb); }
+        } catch(_) {}
+      }
+    }
+
+    if (!fb) fb = 'Keep going — strong effort so far.';
+    flashEyes(0.8);
+    if (apiKey) speakTTS(fb);
+    setTimeout(() => { if (sessionOn) setChip('listening'); else setChip('idle'); }, 7000);
+  } catch(e) {
+    if (e.name === 'AbortError') return;   // intentionally cancelled — no-op
+    console.error('GPT error:', e);
+    const msg = e.message?.includes('429') ? "I'm rate-limited — slow down requests." :
+                e.message?.includes('401') ? "Invalid API key — check your OpenAI key." :
+                "I'm analyzing your delivery — keep going.";
+    say(msg); setChip('listening');
+  }
+}
+
+// ── OpenAI TTS — WebAudio-driven mouth animation ─────────────
+let ttsAudioCtx = null;
+
+async function speakTTS(text) {
+  if (!apiKey) return;
+  if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+  clearInterval(ttsMouthInt);
+  if (ttsAudioCtx) { ttsAudioCtx.close().catch(() => {}); ttsAudioCtx = null; }
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey },
+      body: JSON.stringify({ model:'tts-1', input:text, voice:'onyx', response_format:'mp3' })
+    });
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    ttsAudio   = new Audio(url);
+
+    // ── Real amplitude → mouth via WebAudio analyser ─────────
+    try {
+      ttsAudioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+      const src    = ttsAudioCtx.createMediaElementSource(ttsAudio);
+      const analyser = ttsAudioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      analyser.connect(ttsAudioCtx.destination);
+      const freqBuf = new Uint8Array(analyser.frequencyBinCount);
+
+      // Poll at 40ms — reads speech-frequency bins (bins 2–18 ≈ 85–700 Hz)
+      ttsMouthInt = setInterval(() => {
+        analyser.getByteFrequencyData(freqBuf);
+        let sum = 0;
+        for (let i = 2; i < 18; i++) sum += freqBuf[i];
+        const avg = sum / (16 * 255);
+        tMouthAmp = Math.min(1, avg * 2.8 + 0.08);
+      }, 40);
+    } catch (_) {
+      // WebAudio not available — fallback to simple pulse
+      ttsMouthInt = setInterval(() => { tMouthAmp = 0.55 + Math.random() * 0.45; }, 80);
+    }
+
+    ttsAudio.onended = () => {
+      clearInterval(ttsMouthInt);
+      tMouthAmp = 0;
+      URL.revokeObjectURL(url);
+      if (ttsAudioCtx) { ttsAudioCtx.close().catch(() => {}); ttsAudioCtx = null; }
+    };
+    ttsAudio.play();
+  } catch(e) {
+    console.error('TTS error:', e);
+    clearInterval(ttsMouthInt);
+    tMouthAmp = 0;
+  }
+}
+
+// ── Expose to HTML onclick ───────────────────────────────────
+window.saveApiKey    = saveApiKey;
+window.setMode       = setMode;
+window.startSession  = startSession;
+window.stopSession   = stopSession;
+
+// ── Init ─────────────────────────────────────────────────────
+say('Ready to coach you. Select a mode and press <strong>Start Session</strong>.');
+</script>
+</body>
+</html>
