@@ -17,280 +17,433 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    /* ══════════════════════════════════════════════════════════
+       SPEAKIQ v2.1 — DESIGN SYSTEM
+       Precision dark UI · indigo/violet accent · 8px grid
+    ══════════════════════════════════════════════════════════ */
     :root {
-      --bg:#050a14; --bg2:#080f1e;
-      --cyan:#06b6d4; --blue:#3b82f6;
-      --green:#10b981; --red:#ef4444; --amber:#f59e0b;
-      --text:#e2e8f0; --text-muted:#64748b;
-      --glass:rgba(255,255,255,0.04);
-      --glass-border:rgba(255,255,255,0.08);
+      /* Surfaces */
+      --bg:         #030712;
+      --bg-panel:   #06091a;
+      --bg-card:    #0b1228;
+      --bg-hover:   #101830;
+      /* Accents */
+      --indigo:     #6366f1;
+      --violet:     #8b5cf6;
+      --cyan:       #06b6d4;
+      --green:      #10b981;
+      --amber:      #f59e0b;
+      --red:        #ef4444;
+      /* Text */
+      --text:       #f1f5f9;
+      --text-2:     #94a3b8;
+      --text-3:     #3d4f6b;
+      --text-muted: #64748b;  /* keep for legacy JS inline styles */
+      /* Borders */
+      --border:     rgba(255,255,255,0.07);
+      --border-hi:  rgba(255,255,255,0.13);
+      /* Glass (legacy compat) */
+      --glass:      rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.08);
+      /* Glow shortcuts */
+      --glow-i:     rgba(99,102,241,0.30);
+      --glow-v:     rgba(139,92,246,0.30);
+      --glow-c:     rgba(6,182,212,0.28);
+      /* Radius */
+      --r:   10px;
+      --r-lg: 14px;
     }
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{
-      background:var(--bg);color:var(--text);
-      font-family:'Plus Jakarta Sans',sans-serif;
-      height:100vh;overflow:hidden;
-      display:flex;flex-direction:column;
-    }
-
-    /* ── HEADER ── */
-    .header{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:14px 28px;
-      border-bottom:1px solid var(--glass-border);
-      background:rgba(5,10,20,0.85);
-      backdrop-filter:blur(16px);
-      flex-shrink:0;z-index:10;
-    }
-    .logo{display:flex;align-items:center;gap:10px;}
-    .logo-icon{
-      width:34px;height:34px;
-      background:linear-gradient(135deg,var(--cyan),var(--blue));
-      border-radius:9px;display:flex;align-items:center;
-      justify-content:center;font-size:17px;
-      box-shadow:0 0 16px rgba(6,182,212,0.4);
-    }
-    .logo-text{
-      font-size:21px;font-weight:800;letter-spacing:-0.5px;
-      background:linear-gradient(120deg,#fff 40%,var(--cyan));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    }
-    .logo-tag{font-size:11px;color:var(--text-muted);align-self:flex-end;margin-bottom:3px;margin-left:2px;}
-    .header-right{display:flex;align-items:center;gap:14px;}
-    .session-timer{
-      font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;
-      color:var(--text-muted);background:var(--glass);border:1px solid var(--glass-border);
-      padding:5px 14px;border-radius:20px;min-width:64px;text-align:center;
-    }
-    .session-timer.running{color:var(--cyan);border-color:rgba(6,182,212,0.4);}
-    .api-status{
-      display:flex;align-items:center;gap:6px;
-      padding:6px 14px;border-radius:20px;
-      background:var(--glass);border:1px solid var(--glass-border);
-      font-size:12px;color:var(--text-muted);cursor:pointer;transition:all 0.2s;
-    }
-    .api-status:hover{border-color:rgba(6,182,212,0.3);}
-    .api-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);transition:background 0.3s;}
-    .api-dot.on{background:var(--green);animation:pdot 2s infinite;}
-    @keyframes pdot{0%,100%{opacity:1}50%{opacity:0.4}}
-
-    /* ── MAIN LAYOUT ── */
-    .main{
-      flex:1;display:grid;
-      grid-template-columns:minmax(340px,55%) 1fr;
-      overflow:hidden;
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── LEFT: FACE PANEL ── */
-    .face-panel{
-      position:relative;
-      display:flex;flex-direction:column;
-      align-items:center;
-      border-right:1px solid var(--glass-border);
-      overflow:hidden;
-      background:#050a14;
+    /* ── HEADER ────────────────────────────────────────────── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(3,7,18,0.92);
+      backdrop-filter: blur(20px);
+      flex-shrink: 0; z-index: 20;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--indigo), var(--violet));
+      border-radius: 9px; display: flex; align-items: center;
+      justify-content: center; font-size: 15px;
+      box-shadow: 0 0 18px var(--glow-i);
+    }
+    .logo-name {
+      font-size: 18px; font-weight: 800; letter-spacing: -0.4px;
+      background: linear-gradient(120deg, #fff 55%, var(--indigo));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo-sep { width: 1px; height: 16px; background: var(--border-hi); margin: 0 4px; }
+    .logo-tag { font-size: 11px; color: var(--text-3); font-weight: 400; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    /* timer */
+    .session-timer {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+      color: var(--text-2); background: var(--bg-card); border: 1px solid var(--border);
+      padding: 5px 15px; border-radius: 20px; min-width: 62px; text-align: center; transition: all .3s;
+    }
+    .session-timer.running { color: var(--cyan); border-color: rgba(6,182,212,.4); box-shadow: 0 0 12px rgba(6,182,212,.15); }
+    /* api pill */
+    .api-status {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 20px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      font-size: 11.5px; color: var(--text-2); cursor: pointer; transition: all .2s;
+    }
+    .api-status:hover { border-color: var(--border-hi); }
+    .api-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); transition: background .3s; }
+    .api-dot.on { background: var(--green); box-shadow: 0 0 6px rgba(16,185,129,.5); animation: pdot 2s infinite; }
+    @keyframes pdot { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ── MAIN GRID ──────────────────────────────────────────── */
+    .main { flex:1; display:grid; grid-template-columns: 58% 42%; overflow:hidden; min-height:0; }
+
+    /* ── FACE PANEL ─────────────────────────────────────────── */
+    .face-panel { position:relative; overflow:hidden; background:#020810; border-right:1px solid var(--border); }
+    #faceCanvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+    /* state arc: top chromatic bar that changes color with AI state */
+    .state-arc {
+      position:absolute; top:0; left:0; right:0; height:2px; z-index:6;
+      background: linear-gradient(90deg, transparent 5%, var(--indigo) 50%, transparent 95%);
+      box-shadow: 0 0 16px var(--indigo);
+      transition: background .7s ease, box-shadow .7s ease;
     }
 
-    /* WebGL canvas fills the face panel entirely */
-    #faceCanvas{
-      position:absolute;
-      inset:0;width:100%;height:100%;
-      display:block;
+    /* precision HUD corners */
+    .hud { position:absolute; inset:0; pointer-events:none; z-index:3; }
+    .hc {
+      position:absolute; width:22px; height:22px;
     }
-
-    /* Scan-corner decorations (above canvas via z-index) */
-    .face-ui{
-      position:absolute;inset:0;pointer-events:none;z-index:2;
+    .hc::before, .hc::after {
+      content:''; position:absolute; background: rgba(160,180,210,.45);
     }
-    .corner{position:absolute;width:22px;height:22px;}
-    .corner-tl{top:18px;left:18px;border-top:2px solid rgba(180,195,215,0.55);border-left:2px solid rgba(180,195,215,0.55);border-radius:3px 0 0 0;}
-    .corner-tr{top:18px;right:18px;border-top:2px solid rgba(180,195,215,0.55);border-right:2px solid rgba(180,195,215,0.55);border-radius:0 3px 0 0;}
-    .corner-bl{bottom:72px;left:18px;border-bottom:2px solid rgba(180,195,215,0.55);border-left:2px solid rgba(180,195,215,0.55);border-radius:0 0 0 3px;}
-    .corner-br{bottom:72px;right:18px;border-bottom:2px solid rgba(180,195,215,0.55);border-right:2px solid rgba(180,195,215,0.55);border-radius:0 0 3px 0;}
+    .hc::before { width:1.5px; height:100%; }
+    .hc::after  { width:100%; height:1.5px; }
+    .hc-tl { top:20px; left:20px; }
+    .hc-tl::before { top:0; left:0; }
+    .hc-tl::after  { top:0; left:0; }
+    .hc-tr { top:20px; right:20px; }
+    .hc-tr::before { top:0; right:0; left:auto; }
+    .hc-tr::after  { top:0; right:0; left:auto; }
+    .hc-bl { bottom:84px; left:20px; }
+    .hc-bl::before { bottom:0; top:auto; left:0; }
+    .hc-bl::after  { bottom:0; top:auto; left:0; }
+    .hc-br { bottom:84px; right:20px; }
+    .hc-br::before { bottom:0; top:auto; right:0; left:auto; }
+    .hc-br::after  { bottom:0; top:auto; right:0; left:auto; }
 
-    /* Mode chip + bubble overlaid on face panel bottom */
-    .face-bottom{
-      position:absolute;bottom:0;left:0;right:0;z-index:3;
-      display:flex;flex-direction:column;align-items:center;
-      padding:14px 24px 16px;
-      background:linear-gradient(to top,rgba(5,10,20,0.92) 0%,transparent 100%);
+    /* scan-line tick marks on sides */
+    .hud-tick {
+      position:absolute; background:rgba(99,102,241,.25);
+    }
+    .hud-tick-l { left:20px; top:50%; width:8px; height:1px; margin-top:-0.5px; }
+    .hud-tick-r { right:20px; top:50%; width:8px; height:1px; margin-top:-0.5px; }
+
+    /* face panel bottom gradient + state chip */
+    .face-bottom {
+      position:absolute; bottom:0; left:0; right:0; z-index:4;
+      padding: 72px 28px 20px;
+      background: linear-gradient(to top, rgba(2,8,16,.97) 0%, rgba(2,8,16,.55) 55%, transparent 100%);
+      display: flex; flex-direction:column; align-items:center; gap:10px;
       pointer-events:none;
     }
-    .ai-mode-chip{
-      padding:4px 16px;border-radius:20px;
-      font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-      border:1px solid rgba(180,195,215,0.4);color:rgba(200,215,230,0.80);
-      margin-bottom:10px;pointer-events:none;
-    }
-    .ai-mode-chip.listening{border-color:var(--green);color:var(--green);}
-    .ai-mode-chip.analyzing{border-color:var(--amber);color:var(--amber);}
-    .ai-mode-chip.speaking {border-color:var(--cyan); color:var(--cyan);}
-    .speech-bubble{
-      padding:12px 20px;
-      background:rgba(8,15,30,0.80);
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:16px;font-size:13px;
-      color:var(--text);max-width:420px;width:100%;
-      text-align:center;line-height:1.55;
-      min-height:48px;display:flex;align-items:center;justify-content:center;
-    }
-    .typing{display:flex;gap:5px;align-items:center;}
-    .typing span{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:bounce 1.3s infinite;}
-    .typing span:nth-child(2){animation-delay:.15s}
-    .typing span:nth-child(3){animation-delay:.3s}
-    @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-7px);opacity:1}}
 
-    /* ── RIGHT: CONTROLS ── */
-    .controls-panel{
-      display:flex;flex-direction:column;padding:22px 24px;gap:18px;overflow-y:auto;
+    /* state chip — replaces old ai-mode-chip */
+    .ai-mode-chip, .state-chip {
+      display:flex; align-items:center; gap:7px;
+      padding: 4px 14px 4px 10px; border-radius:20px;
+      background: rgba(3,7,18,.8); backdrop-filter:blur(8px);
+      border: 1px solid rgba(255,255,255,.09);
+      font-size:10px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase;
+      color: var(--text-2); transition:all .4s; margin-bottom:2px;
     }
-    .controls-panel::-webkit-scrollbar{width:3px;}
-    .controls-panel::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:4px;}
-    .sec-label{font-size:10.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px;}
-    .api-row{display:flex;gap:8px;}
-    .inp{
-      flex:1;padding:11px 15px;background:var(--glass);border:1px solid var(--glass-border);
-      border-radius:10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;
-      outline:none;transition:border-color 0.2s;
+    .state-dot {
+      width:5px; height:5px; border-radius:50%;
+      background: var(--text-3); flex-shrink:0; transition:all .4s;
     }
-    .inp:focus{border-color:var(--cyan);}
-    .inp::placeholder{color:var(--text-muted);}
-    .btn-sm{
-      padding:11px 16px;border-radius:10px;border:1px solid var(--cyan);
-      background:rgba(6,182,212,0.08);color:var(--cyan);font-size:12.5px;font-weight:700;
-      font-family:inherit;cursor:pointer;white-space:nowrap;transition:all 0.2s;
-    }
-    .btn-sm:hover{background:rgba(6,182,212,0.18);}
-    .mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-    .mode-card{
-      padding:16px 12px;text-align:center;background:var(--glass);
-      border:1px solid var(--glass-border);border-radius:14px;cursor:pointer;
-      transition:all 0.2s;user-select:none;
-    }
-    .mode-card:hover{border-color:rgba(6,182,212,0.3);transform:translateY(-2px);}
-    .mode-card.active{border-color:var(--cyan);background:rgba(6,182,212,0.08);box-shadow:0 0 18px rgba(6,182,212,0.12);}
-    .mode-icon{font-size:26px;margin-bottom:6px;}
-    .mode-name{font-size:12.5px;font-weight:700;}
-    .mode-desc{font-size:10.5px;color:var(--text-muted);margin-top:3px;line-height:1.4;}
-    .sess-row{display:flex;gap:10px;}
-    .btn-start{
-      flex:1;padding:14px;background:linear-gradient(135deg,var(--cyan),var(--blue));
-      border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;
-      font-family:inherit;cursor:pointer;transition:all 0.2s;
-      display:flex;align-items:center;justify-content:center;gap:8px;
-      box-shadow:0 4px 16px rgba(6,182,212,0.25);
-    }
-    .btn-start:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(6,182,212,0.35);}
-    .btn-start:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
-    .btn-stop{
-      padding:14px 20px;border-radius:12px;border:1px solid var(--glass-border);
-      background:var(--glass);color:var(--text);font-size:13px;font-weight:600;
-      font-family:inherit;cursor:pointer;transition:all 0.2s;
-    }
-    .btn-stop:hover:not(:disabled){border-color:var(--red);color:var(--red);}
-    .btn-stop:disabled{opacity:0.3;cursor:not-allowed;}
-    .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-    .metric-card{padding:13px 15px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;}
-    .metric-label{font-size:10.5px;color:var(--text-muted);font-weight:500;}
-    .metric-val{font-size:26px;font-weight:800;margin-top:1px;font-family:'JetBrains Mono',monospace;color:var(--cyan);line-height:1.1;}
-    .metric-val.warn{color:var(--amber);}
-    .metric-val.good{color:var(--green);}
-    .metric-unit{font-size:10px;color:var(--text-muted);}
-    .filler-box{padding:13px 15px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;}
-    .filler-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:22px;}
-    .filler-chip{padding:3px 10px;border-radius:20px;font-size:11.5px;font-family:'JetBrains Mono',monospace;font-weight:600;border:1px solid var(--amber);color:var(--amber);display:flex;align-items:center;gap:5px;}
-    .filler-chip .fc{background:rgba(245,158,11,0.2);padding:0 5px;border-radius:8px;font-size:10px;}
-    .transcript-box{
-      padding:13px 15px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;
-      font-size:12.5px;line-height:1.65;color:var(--text-muted);
-      min-height:72px;max-height:110px;overflow-y:auto;
-    }
-    .transcript-box::-webkit-scrollbar{width:3px;}
-    .transcript-box::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:4px;}
-    .tf{color:var(--amber);font-weight:600;}
-    .ti{color:var(--text-muted);font-style:italic;}
+    /* listening */
+    .ai-mode-chip.listening, .state-chip.listening { color:var(--indigo); border-color:rgba(99,102,241,.35); }
+    .ai-mode-chip.listening .state-dot { background:var(--indigo); box-shadow:0 0 7px var(--indigo); animation:pdot 1.4s infinite; }
+    /* analyzing */
+    .ai-mode-chip.analyzing, .state-chip.analyzing { color:var(--violet); border-color:rgba(139,92,246,.35); }
+    .ai-mode-chip.analyzing .state-dot { background:var(--violet); box-shadow:0 0 7px var(--violet); }
+    /* speaking */
+    .ai-mode-chip.speaking, .state-chip.speaking { color:var(--cyan); border-color:rgba(6,182,212,.35); }
+    .ai-mode-chip.speaking .state-dot { background:var(--cyan); box-shadow:0 0 7px var(--cyan); animation:pdot .75s infinite; }
 
-    /* ── FOOTER ── */
-    .footer{
-      padding:9px 28px;display:flex;align-items:center;justify-content:space-between;
-      border-top:1px solid var(--glass-border);background:rgba(5,10,20,0.6);
-      backdrop-filter:blur(12px);flex-shrink:0;
+    /* speech bubble */
+    .speech-bubble {
+      max-width:440px; width:100%;
+      padding:13px 22px;
+      background:rgba(4,8,22,.84); border:1px solid rgba(255,255,255,.09);
+      backdrop-filter:blur(18px); border-radius:14px;
+      font-size:13px; line-height:1.62; color:var(--text);
+      text-align:center; min-height:48px;
+      display:flex; align-items:center; justify-content:center;
     }
-    .foot-indicators{display:flex;align-items:center;gap:18px;}
-    .ind{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-muted);}
-    .ind-dot{width:6px;height:6px;border-radius:50%;background:var(--glass-border);transition:background 0.3s;}
-    .ind-dot.on{background:var(--green);animation:pdot 1.8s infinite;}
-    .foot-right{font-size:10.5px;color:var(--text-muted);}
+    .typing { display:flex; gap:5px; align-items:center; }
+    .typing span {
+      width:5px; height:5px; border-radius:50%; background:var(--indigo);
+      animation:bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2){animation-delay:.14s}
+    .typing span:nth-child(3){animation-delay:.28s}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-6px);opacity:1}}
 
-    /* ── CAMERA PiP ── */
-    .cam-pip{
-      position:fixed;bottom:22px;right:22px;width:158px;height:118px;
-      border-radius:13px;overflow:hidden;border:1.5px solid var(--glass-border);
-      background:#000;display:none;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    /* ── CONTROLS PANEL ─────────────────────────────────────── */
+    .controls-panel {
+      display:flex; flex-direction:column;
+      background:var(--bg-panel);
+      overflow-y:auto; overflow-x:hidden;
     }
-    .cam-pip video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
-    .cam-label{position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,0.55);padding:2px 7px;border-radius:5px;}
+    .controls-panel::-webkit-scrollbar{width:2px;}
+    .controls-panel::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:4px;}
 
-    /* ── AVATAR LOADING OVERLAY ── */
-    .avatar-load{
-      position:absolute;inset:0;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;z-index:5;pointer-events:none;
-    }
-    .spin-ring{
-      width:34px;height:34px;border-radius:50%;
-      border:2px solid rgba(59,130,246,0.20);
-      border-top-color:#3b82f6;
-      animation:spin 0.85s linear infinite;
-    }
-    .load-label{margin-top:12px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:rgba(100,116,139,0.75);}
-    .load-err{color:#ef4444;font-size:12px;text-align:center;padding:20px;line-height:1.6;}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    /* section wrapper — tight 12px grid */
+    .cp-section { padding:11px 18px; border-bottom:1px solid var(--border); }
+    .cp-section:last-child { border-bottom:none; }
 
-    /* ── SR WARNING BANNER ── */
-    .sr-warn{
-      position:absolute;top:56px;left:50%;transform:translateX(-50%);
-      background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
-      color:#f59e0b;font-size:11.5px;padding:6px 16px;border-radius:20px;
-      z-index:10;white-space:nowrap;
+    /* section labels */
+    .sec-label {
+      font-size:9px; font-weight:700; letter-spacing:2.2px;
+      text-transform:uppercase; color:var(--text-3); margin-bottom:8px;
+    }
+
+    /* API key — inline button inside input */
+    .api-row { display:block; }
+    .api-input-wrap { position:relative; }
+    .inp {
+      width:100%; padding:8px 44px 8px 12px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r); color:var(--text);
+      font-family:'JetBrains Mono',monospace; font-size:11.5px;
+      outline:none; transition:border-color .2s; min-width:0;
+    }
+    .inp:focus { border-color:rgba(99,102,241,.5); }
+    .inp::placeholder { color:var(--text-3); }
+    /* inline connect button */
+    .btn-sm {
+      position:absolute; right:5px; top:50%; transform:translateY(-50%);
+      width:30px; height:28px; border-radius:7px;
+      border:1px solid rgba(99,102,241,.4); background:rgba(99,102,241,.12);
+      color:var(--indigo); font-size:15px; font-weight:700;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all .2s; padding:0;
+    }
+    .btn-sm:hover { background:rgba(99,102,241,.28); border-color:var(--indigo); }
+
+    /* mode pills — segmented control */
+    .mode-pills-wrap {
+      display:flex; gap:4px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:11px; padding:3px;
+    }
+    .mode-card {
+      flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px;
+      padding:7px 4px; border-radius:8px; border:none;
+      background:transparent; color:var(--text-2);
+      font-family:inherit; font-size:10px; font-weight:600;
+      cursor:pointer; transition:all .2s; user-select:none; overflow:hidden;
+    }
+    .mode-card:hover:not(.active) { background:rgba(255,255,255,.04); color:var(--text); }
+    .mode-card.active {
+      background:rgba(99,102,241,.13); color:var(--indigo);
+      box-shadow:inset 0 0 0 1px rgba(99,102,241,.32);
+    }
+    .mode-card .mode-icon { font-size:17px; }
+    .mode-card .mode-name { letter-spacing:.1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center; }
+
+    /* session buttons */
+    .sess-row { display:flex; gap:7px; align-items:stretch; }
+    .btn-start {
+      flex:1; padding:11px 18px;
+      background:linear-gradient(135deg, var(--indigo), var(--violet));
+      border:none; border-radius:11px; color:#fff;
+      font-size:13px; font-weight:700; font-family:inherit;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+      transition:all .2s; box-shadow:0 4px 18px var(--glow-i); position:relative; overflow:hidden;
+    }
+    .btn-start::after {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,.13),transparent);
+      pointer-events:none;
+    }
+    .btn-start:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 28px var(--glow-i); }
+    .btn-start:disabled { opacity:.32; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-stop {
+      padding:11px 14px; border-radius:11px;
+      border:1px solid var(--border-hi); background:var(--bg-card);
+      color:var(--text-2); font-size:12.5px; font-weight:600; font-family:inherit;
+      cursor:pointer; transition:all .2s;
+    }
+    .btn-stop:hover:not(:disabled) { border-color:var(--red); color:var(--red); background:rgba(239,68,68,.06); }
+    .btn-stop:disabled { opacity:.22; cursor:not-allowed; }
+
+    /* metric grid with rings */
+    .metrics-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .metric-card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r); padding:10px 10px;
+      display:flex; align-items:center; gap:9px; transition:border-color .3s;
+    }
+    /* SVG ring — 40px */
+    .mring-wrap { position:relative; width:40px; height:40px; flex-shrink:0; }
+    .mring-svg  { width:40px; height:40px; transform:rotate(-90deg); }
+    .mring-bg   { fill:none; stroke:rgba(255,255,255,.06); stroke-width:2.5; }
+    .mring-fill { fill:none; stroke:var(--indigo); stroke-width:2.5; stroke-linecap:round;
+                  stroke-dasharray:0 113; transition:stroke-dasharray .7s cubic-bezier(.4,0,.2,1), stroke .4s; }
+    .mring-num  {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; color:var(--text);
+    }
+    .metric-info { min-width:0; flex:1; }
+    .metric-label { font-size:9px; color:var(--text-3); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .metric-val {
+      font-size:18px; font-weight:800; color:var(--indigo);
+      font-family:'JetBrains Mono',monospace; line-height:1.1; margin-top:1px;
+      transition:color .3s;
+    }
+    .metric-val.warn { color:var(--amber); }
+    .metric-val.good { color:var(--green); }
+    .metric-unit { font-size:8.5px; color:var(--text-3); margin-top:1px; }
+
+    /* filler chips */
+    .filler-chips { display:flex; flex-wrap:wrap; gap:4px; min-height:20px; }
+    .filler-chip {
+      display:flex; align-items:center; gap:4px;
+      padding:3px 9px; border-radius:20px;
+      border:1px solid rgba(245,158,11,.28); background:rgba(245,158,11,.06);
+      color:var(--amber); font-size:10.5px;
+      font-family:'JetBrains Mono',monospace; font-weight:600;
+    }
+    .filler-chip .fc {
+      background:rgba(245,158,11,.18); padding:1px 5px;
+      border-radius:6px; font-size:9.5px;
+    }
+    .empty-hint { font-size:11px; color:var(--text-3); font-style:italic; }
+
+    /* transcript */
+    .transcript-box {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r); padding:9px 12px;
+      font-size:11.5px; line-height:1.65; color:var(--text-2);
+      min-height:48px; max-height:76px; overflow-y:auto;
+    }
+    .transcript-box::-webkit-scrollbar{width:2px;}
+    .transcript-box::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:4px;}
+    .tf { color:var(--amber); font-weight:600; }
+    .ti { color:var(--text-3); font-style:italic; }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    .footer {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 24px; height:36px;
+      border-top:1px solid var(--border);
+      background:rgba(3,7,18,.82); backdrop-filter:blur(12px); flex-shrink:0;
+    }
+    .foot-indicators { display:flex; align-items:center; gap:20px; }
+    .ind { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-3); transition:color .3s; }
+    .ind-dot { width:5px; height:5px; border-radius:50%; background:var(--text-3); transition:all .3s; }
+    .ind-dot.on { background:var(--green); box-shadow:0 0 6px rgba(16,185,129,.5); animation:pdot 1.8s infinite; }
+    .foot-right { font-size:9.5px; color:var(--text-3); font-family:'JetBrains Mono',monospace; }
+
+    /* ── CAMERA PIP ─────────────────────────────────────────── */
+    .cam-pip {
+      position:fixed; bottom:48px; right:18px; width:150px; height:112px;
+      border-radius:12px; overflow:hidden; border:1px solid var(--border-hi);
+      background:#000; display:none; z-index:100; box-shadow:0 8px 32px rgba(0,0,0,.65);
+    }
+    .cam-pip video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+    .cam-label {
+      position:absolute; bottom:6px; left:8px;
+      font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+      color:rgba(255,255,255,.75); background:rgba(0,0,0,.52); padding:2px 7px; border-radius:4px;
+    }
+
+    /* ── AVATAR LOADING ─────────────────────────────────────── */
+    .avatar-load {
+      position:absolute; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; z-index:5; pointer-events:none;
+    }
+    .spin-ring {
+      width:32px; height:32px; border-radius:50%;
+      border:2px solid rgba(99,102,241,.2); border-top-color:var(--indigo);
+      animation:spin .8s linear infinite;
+    }
+    .load-label { margin-top:11px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text-3); }
+    .load-err   { color:var(--red); font-size:12px; text-align:center; padding:20px; line-height:1.6; }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+
+    /* ── SR WARNING ─────────────────────────────────────────── */
+    .sr-warn {
+      position:absolute; top:56px; left:50%; transform:translateX(-50%);
+      background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.4);
+      color:var(--amber); font-size:11px; padding:5px 14px; border-radius:20px;
+      z-index:10; white-space:nowrap;
     }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ── HEADER ──────────────────────────────────────────────── -->
 <header class="header">
   <div class="logo">
-    <div class="logo-icon">🎤</div>
-    <span class="logo-text">SpeakIQ</span>
-    <span class="logo-tag">Speak like you mean it.</span>
+    <div class="logo-mark">🎙</div>
+    <span class="logo-name">SpeakIQ</span>
+    <div class="logo-sep"></div>
+    <span class="logo-tag">AI Speaking Coach</span>
   </div>
   <div class="header-right">
     <div class="session-timer" id="timerEl">00:00</div>
-    <div class="api-status" onclick="window.saveApiKey && document.getElementById('apiKeyInput').focus()">
+    <div class="api-status" onclick="document.getElementById('apiKeyInput').focus()">
       <div class="api-dot" id="apiDot"></div>
       <span id="apiLabel">No API Key</span>
     </div>
   </div>
 </header>
 
-<!-- MAIN -->
+<!-- ── MAIN ────────────────────────────────────────────────── -->
 <div class="main">
 
-  <!-- LEFT: AI FACE -->
+  <!-- LEFT: AI AVATAR -->
   <div class="face-panel">
     <canvas id="faceCanvas"></canvas>
 
-    <!-- Scan corner overlays -->
-    <div class="face-ui">
-      <div class="corner corner-tl"></div>
-      <div class="corner corner-tr"></div>
-      <div class="corner corner-bl"></div>
-      <div class="corner corner-br"></div>
+    <!-- State arc (top chromatic bar) -->
+    <div class="state-arc" id="stateArc"></div>
+
+    <!-- Precision HUD corners -->
+    <div class="hud">
+      <div class="hc hc-tl"></div>
+      <div class="hc hc-tr"></div>
+      <div class="hc hc-bl"></div>
+      <div class="hc hc-br"></div>
+      <div class="hud-tick hud-tick-l"></div>
+      <div class="hud-tick hud-tick-r"></div>
     </div>
 
-    <!-- Bottom HUD -->
+    <!-- Bottom HUD: state chip + speech bubble -->
     <div class="face-bottom">
-      <div class="ai-mode-chip" id="modeChip">Idle</div>
+      <div class="ai-mode-chip" id="modeChip">
+        <div class="state-dot"></div>
+        <span>Idle</span>
+      </div>
       <div class="speech-bubble" id="speechBubble">
         Ready to coach you. Select a mode and press <strong>Start Session</strong>.
       </div>
@@ -300,36 +453,38 @@
   <!-- RIGHT: CONTROLS -->
   <div class="controls-panel">
 
-    <div>
+    <!-- API Key -->
+    <div class="cp-section">
       <div class="sec-label">OpenAI API Key</div>
       <div class="api-row">
-        <input type="password" class="inp" id="apiKeyInput" placeholder="sk-...  (required for AI feedback + voice)">
-        <button class="btn-sm" onclick="window.saveApiKey()">Connect</button>
-      </div>
-    </div>
-
-    <div>
-      <div class="sec-label">Session Mode</div>
-      <div class="mode-grid">
-        <div class="mode-card active" id="mode-presentation" onclick="window.setMode('presentation')">
-          <div class="mode-icon">🎤</div>
-          <div class="mode-name">Presentation</div>
-          <div class="mode-desc">Clarity, pacing, eye contact</div>
-        </div>
-        <div class="mode-card" id="mode-debate" onclick="window.setMode('debate')">
-          <div class="mode-icon">⚖️</div>
-          <div class="mode-name">Debate</div>
-          <div class="mode-desc">Arguments, logic, rebuttals</div>
-        </div>
-        <div class="mode-card" id="mode-interview" onclick="window.setMode('interview')">
-          <div class="mode-icon">💼</div>
-          <div class="mode-name">Interview</div>
-          <div class="mode-desc">Confidence, STAR method</div>
+        <div class="api-input-wrap">
+          <input type="password" class="inp" id="apiKeyInput" placeholder="sk-…  paste your key here">
+          <button class="btn-sm" onclick="window.saveApiKey()" title="Connect">⚡</button>
         </div>
       </div>
     </div>
 
-    <div>
+    <!-- Mode -->
+    <div class="cp-section">
+      <div class="sec-label">Coaching Mode</div>
+      <div class="mode-pills-wrap">
+        <button class="mode-card active" id="mode-presentation" onclick="window.setMode('presentation')">
+          <span class="mode-icon">🎤</span>
+          <span class="mode-name">Presentation</span>
+        </button>
+        <button class="mode-card" id="mode-debate" onclick="window.setMode('debate')">
+          <span class="mode-icon">⚖️</span>
+          <span class="mode-name">Debate</span>
+        </button>
+        <button class="mode-card" id="mode-interview" onclick="window.setMode('interview')">
+          <span class="mode-icon">💼</span>
+          <span class="mode-name">Interview</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div class="cp-section">
       <div class="sec-label">Session</div>
       <div class="sess-row">
         <button class="btn-start" id="startBtn" onclick="window.startSession()">▶&nbsp; Start Session</button>
@@ -337,60 +492,102 @@
       </div>
     </div>
 
-    <div>
+    <!-- Live Metrics with SVG rings -->
+    <div class="cp-section">
       <div class="sec-label">Live Metrics</div>
       <div class="metrics-grid">
+
         <div class="metric-card">
-          <div class="metric-label">Speaking Pace</div>
-          <div class="metric-val" id="mWpm">—</div>
-          <div class="metric-unit">words / min</div>
+          <div class="mring-wrap">
+            <svg class="mring-svg" viewBox="0 0 46 46">
+              <circle class="mring-bg" cx="23" cy="23" r="18"/>
+              <circle class="mring-fill" id="ringWpm" cx="23" cy="23" r="18"/>
+            </svg>
+            <div class="mring-num" id="ringWpmN">—</div>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Speaking Pace</div>
+            <div class="metric-val" id="mWpm">—</div>
+            <div class="metric-unit">wpm</div>
+          </div>
         </div>
+
         <div class="metric-card">
-          <div class="metric-label">Eye Contact</div>
-          <div class="metric-val" id="mEye">—</div>
-          <div class="metric-unit">% on-camera</div>
+          <div class="mring-wrap">
+            <svg class="mring-svg" viewBox="0 0 46 46">
+              <circle class="mring-bg" cx="23" cy="23" r="18"/>
+              <circle class="mring-fill" id="ringEye" cx="23" cy="23" r="18"/>
+            </svg>
+            <div class="mring-num" id="ringEyeN">—</div>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Eye Contact</div>
+            <div class="metric-val" id="mEye">—</div>
+            <div class="metric-unit">% on-cam</div>
+          </div>
         </div>
+
         <div class="metric-card">
-          <div class="metric-label">Filler Words</div>
-          <div class="metric-val" id="mFiller">0</div>
-          <div class="metric-unit">detected total</div>
+          <div class="mring-wrap">
+            <svg class="mring-svg" viewBox="0 0 46 46">
+              <circle class="mring-bg" cx="23" cy="23" r="18"/>
+              <circle class="mring-fill" id="ringFiller" cx="23" cy="23" r="18" style="stroke:var(--amber)"/>
+            </svg>
+            <div class="mring-num" id="ringFillerN">0</div>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Filler Words</div>
+            <div class="metric-val" id="mFiller">0</div>
+            <div class="metric-unit">detected</div>
+          </div>
         </div>
+
         <div class="metric-card">
-          <div class="metric-label">Confidence</div>
-          <div class="metric-val" id="mConf">—</div>
-          <div class="metric-unit">score</div>
+          <div class="mring-wrap">
+            <svg class="mring-svg" viewBox="0 0 46 46">
+              <circle class="mring-bg" cx="23" cy="23" r="18"/>
+              <circle class="mring-fill" id="ringConf" cx="23" cy="23" r="18" style="stroke:var(--green)"/>
+            </svg>
+            <div class="mring-num" id="ringConfN">—</div>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Confidence</div>
+            <div class="metric-val" id="mConf">—</div>
+            <div class="metric-unit">score</div>
+          </div>
         </div>
+
       </div>
     </div>
 
-    <div>
+    <!-- Filler Word Tracker -->
+    <div class="cp-section">
       <div class="sec-label">Filler Word Tracker</div>
-      <div class="filler-box">
-        <div class="filler-chips" id="fillerChips">
-          <span style="font-size:11.5px;color:var(--text-muted)">None detected yet</span>
-        </div>
+      <div class="filler-chips" id="fillerChips">
+        <span class="empty-hint">None detected yet</span>
       </div>
     </div>
 
-    <div>
+    <!-- Transcript -->
+    <div class="cp-section">
       <div class="sec-label">Live Transcript</div>
       <div class="transcript-box" id="transcriptBox">
-        <span style="color:var(--text-muted)">Transcript will appear here when session starts…</span>
+        <span class="empty-hint">Transcript will appear here when session starts…</span>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- FOOTER -->
+<!-- ── FOOTER ──────────────────────────────────────────────── -->
 <footer class="footer">
   <div class="foot-indicators">
     <div class="ind"><div class="ind-dot" id="dotCam"></div> Camera</div>
-    <div class="ind"><div class="ind-dot" id="dotMic"></div> Microphone</div>
-    <div class="ind"><div class="ind-dot" id="dotAI"></div>  AI Coach</div>
-    <div class="ind"><div class="ind-dot" id="dotSpeech"></div> Speech API</div>
+    <div class="ind"><div class="ind-dot" id="dotMic"></div> Mic</div>
+    <div class="ind"><div class="ind-dot" id="dotAI"></div> AI Coach</div>
+    <div class="ind"><div class="ind-dot" id="dotSpeech"></div> Speech</div>
   </div>
-  <div class="foot-right">SpeakIQ v2.1 — GPU Particle Avatar &nbsp;|&nbsp; Rodin Mesh · WebAudio TTS · GPT-4o Streaming</div>
+  <div class="foot-right">SpeakIQ v2.1 · Rodin Mesh · MediaPipe · GPT-4o</div>
 </footer>
 
 <!-- Camera PiP -->
@@ -1021,11 +1218,41 @@ function saveApiKey() {
 })();
 
 // ── Mode chip + speech bubble ────────────────────────────────
+// ── State arc accent colors ───────────────────────────────────
+const ARC_COLORS = {
+  idle:      'var(--indigo)',
+  listening: 'var(--indigo)',
+  analyzing: 'var(--violet)',
+  speaking:  'var(--cyan)',
+};
+
 function setChip(mode) {
   setFaceState(mode);
   const chip = document.getElementById('modeChip');
-  chip.textContent = { idle:'Idle', listening:'Listening', analyzing:'Analyzing', speaking:'Speaking' }[mode] || mode;
-  chip.className   = 'ai-mode-chip ' + mode;
+  const label = { idle:'Idle', listening:'Listening', analyzing:'Analyzing', speaking:'Speaking' }[mode] || mode;
+  // Update inner span only (preserve the state-dot sibling)
+  const span = chip.querySelector('span');
+  if (span) span.textContent = label;
+  chip.className = 'ai-mode-chip ' + mode;
+  // Drive state arc color
+  const arc = document.getElementById('stateArc');
+  if (arc) {
+    const c = ARC_COLORS[mode] || 'var(--indigo)';
+    arc.style.background = `linear-gradient(90deg,transparent 5%,${c} 50%,transparent 95%)`;
+    arc.style.boxShadow  = `0 0 16px ${c}`;
+  }
+}
+
+// ── SVG metric ring updater ───────────────────────────────────
+// circ = 2π×18 ≈ 113.1 for r=18
+const RING_CIRC = 113.1;
+function updateRing(ringId, numId, value, max) {
+  const pct  = Math.min(1, Math.max(0, value / max));
+  const dash = (pct * RING_CIRC).toFixed(1);
+  const ring = document.getElementById(ringId);
+  const num  = document.getElementById(numId);
+  if (ring) ring.style.strokeDasharray = `${dash} ${RING_CIRC}`;
+  if (num)  num.textContent = value === null ? '—' : String(value);
 }
 
 function say(text, typing = false) {
@@ -1177,7 +1404,10 @@ function processText(txt) {
     if (m) fillerCounts[f] = (fillerCounts[f] || 0) + m.length;
   });
   updateFillerChips();
-  document.getElementById('mFiller').textContent = Object.values(fillerCounts).reduce((a,b)=>a+b,0);
+  const ftotal2 = Object.values(fillerCounts).reduce((a,b)=>a+b,0);
+  document.getElementById('mFiller').textContent = ftotal2;
+  // Filler ring: 0=good(empty), fills as fillers accumulate (cap at 20)
+  updateRing('ringFiller', 'ringFillerN', Math.min(ftotal2, 20), 20);
 }
 
 function calcWPM(txt) {
@@ -1191,6 +1421,8 @@ function calcWPM(txt) {
   const el  = document.getElementById('mWpm');
   el.textContent = wpm || '—';
   el.className   = 'metric-val' + (wpm > 0 && (wpm < 100 || wpm > 185) ? ' warn' : wpm > 0 ? ' good' : '');
+  // Update WPM ring (ideal range 80–200 wpm → map to 0–100%)
+  if (wpm > 0) updateRing('ringWpm', 'ringWpmN', wpm, 220);
 }
 
 function renderTranscript() {
@@ -1348,6 +1580,7 @@ function processFaceFrame() {
   eyeEl.textContent = eyePct;
   eyeEl.className   = 'metric-val' +
     (eyePct >= 70 ? ' good' : eyePct >= 50 ? '' : ' warn');
+  updateRing('ringEye', 'ringEyeN', eyePct, 100);
 
   // ── Confidence ───────────────────────────────────────────
   if (results.faceBlendshapes?.length) {
@@ -1359,6 +1592,7 @@ function processFaceFrame() {
     confEl.textContent = smoothConf;
     confEl.className   = 'metric-val' +
       (smoothConf >= 70 ? ' good' : smoothConf >= 50 ? '' : ' warn');
+    updateRing('ringConf', 'ringConfN', smoothConf, 99);
   }
 }
 
@@ -1520,6 +1754,7 @@ window.startSession  = startSession;
 window.stopSession   = stopSession;
 
 // ── Init ─────────────────────────────────────────────────────
+setChip('idle');   // initialise arc + state dot colour
 say('Ready to coach you. Select a mode and press <strong>Start Session</strong>.');
 </script>
 </body>
