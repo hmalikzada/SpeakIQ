@@ -1,0 +1,22 @@
+{
+  "name": "speakiq",
+  "version": "2.2.0",
+  "description": "AI Speaking Coach — Three.js particle avatar, GPT-4o coaching, MediaPipe eye tracking",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "install-deps": "npm install"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

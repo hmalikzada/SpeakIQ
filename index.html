@@ -397,6 +397,86 @@
       color:var(--amber); font-size:11px; padding:5px 14px; border-radius:20px;
       z-index:10; white-space:nowrap;
     }
+
+    /* ── SETTINGS PANEL ─────────────────────────────────────── */
+    .btn-icon {
+      width:32px; height:32px; border-radius:8px;
+      border:1px solid var(--border); background:var(--bg-card);
+      color:var(--text-2); font-size:16px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all .2s; flex-shrink:0;
+    }
+    .btn-icon:hover { border-color:var(--border-hi); color:var(--text); background:var(--bg-hover); }
+    .btn-icon.active { border-color:rgba(99,102,241,.5); color:var(--indigo); background:rgba(99,102,241,.1); }
+
+    .settings-panel {
+      position:fixed; top:52px; right:0;
+      width:300px;
+      background:var(--bg-panel); border:1px solid var(--border-hi);
+      border-top:none; border-radius:0 0 14px 14px;
+      box-shadow:0 16px 48px rgba(0,0,0,.7);
+      z-index:200;
+      transform:translateY(-6px); opacity:0; pointer-events:none;
+      transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+    }
+    .settings-panel.open {
+      transform:translateY(0); opacity:1; pointer-events:all;
+    }
+    .settings-hdr {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:13px 16px; border-bottom:1px solid var(--border);
+      font-size:11.5px; font-weight:700; color:var(--text-2); letter-spacing:.3px;
+    }
+    .settings-close {
+      width:24px; height:24px; border-radius:6px;
+      border:none; background:transparent; color:var(--text-3);
+      cursor:pointer; font-size:13px; line-height:1;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .15s;
+    }
+    .settings-close:hover { color:var(--text); background:var(--bg-card); }
+    .settings-body { padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .settings-hint { font-size:10px; color:var(--text-3); line-height:1.55; }
+
+    /* ── ONBOARDING MODAL ───────────────────────────────────── */
+    .onboard-backdrop {
+      position:fixed; inset:0; background:rgba(2,4,16,.82); backdrop-filter:blur(8px);
+      z-index:500; display:flex; align-items:center; justify-content:center;
+    }
+    .onboard-modal {
+      background:var(--bg-panel); border:1px solid var(--border-hi);
+      border-radius:18px; padding:32px 28px; max-width:400px; width:90%;
+      box-shadow:0 24px 80px rgba(0,0,0,.8);
+    }
+    .onboard-icon { font-size:32px; margin-bottom:12px; }
+    .onboard-title { font-size:20px; font-weight:800; margin-bottom:8px; letter-spacing:-.3px; }
+    .onboard-sub { font-size:12.5px; color:var(--text-2); margin-bottom:20px; line-height:1.6; }
+    .onboard-perms { display:flex; flex-direction:column; gap:12px; }
+    .perm-row { display:flex; align-items:flex-start; gap:12px; font-size:12px; color:var(--text-2); line-height:1.55; }
+    .perm-row strong { color:var(--text); }
+    .perm-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+    .perm-note { background:rgba(99,102,241,.07); border:1px solid rgba(99,102,241,.18); border-radius:8px; padding:8px 10px; }
+
+    /* ── HISTORY + EXPORT ───────────────────────────────────── */
+    .btn-export {
+      padding:3px 10px; border-radius:7px;
+      border:1px solid var(--border-hi); background:transparent;
+      color:var(--text-3); font-size:10px; font-weight:600; font-family:inherit;
+      cursor:pointer; transition:all .2s;
+    }
+    .btn-export:not(:disabled):hover { border-color:var(--indigo); color:var(--indigo); }
+    .btn-export:disabled { opacity:.3; cursor:not-allowed; }
+    .history-list { display:flex; flex-direction:column; gap:5px; max-height:110px; overflow-y:auto; }
+    .history-list::-webkit-scrollbar{width:2px;}
+    .history-list::-webkit-scrollbar-thumb{background:var(--border-hi);}
+    .hist-item {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:5px 9px; border-radius:7px;
+      background:var(--bg-card); border:1px solid var(--border);
+      font-size:10.5px; color:var(--text-2); gap:8px;
+    }
+    .hist-mode { font-weight:600; color:var(--indigo); text-transform:capitalize; flex-shrink:0; }
+    .hist-meta { font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-3); white-space:nowrap; }
   </style>
 </head>
 <body>
@@ -411,12 +491,57 @@
   </div>
   <div class="header-right">
     <div class="session-timer" id="timerEl">00:00</div>
-    <div class="api-status" onclick="document.getElementById('apiKeyInput').focus()">
+    <div class="api-status" onclick="window.toggleSettings()">
       <div class="api-dot" id="apiDot"></div>
       <span id="apiLabel">No API Key</span>
     </div>
+    <button class="btn-icon" id="settingsBtn" onclick="window.toggleSettings()" title="Settings">⚙</button>
   </div>
 </header>
+
+<!-- ── SETTINGS PANEL ──────────────────────────────────────── -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-hdr">
+    <span>Settings</span>
+    <button class="settings-close" onclick="window.toggleSettings()">✕</button>
+  </div>
+  <div class="settings-body">
+    <div>
+      <div class="sec-label" style="margin-bottom:6px">OpenAI API Key</div>
+      <div class="api-input-wrap">
+        <input type="password" class="inp" id="apiKeyInput" placeholder="sk-…  paste your key">
+        <button class="btn-sm" onclick="window.saveApiKey()" title="Connect">⚡</button>
+      </div>
+    </div>
+    <div class="settings-hint">Your key is stored only in this browser. It is used to call GPT-4o for coaching feedback and TTS voice — never sent to our servers.</div>
+    <div style="padding-top:4px;border-top:1px solid var(--border)">
+      <div class="sec-label" style="margin-bottom:6px">Render Quality</div>
+      <div style="display:flex;gap:5px">
+        <button class="mode-card active" id="q-high" style="flex:1;padding:7px 4px" onclick="window.setQuality('high')"><span style="font-size:14px">🔥</span><span class="mode-name">High</span></button>
+        <button class="mode-card" id="q-low" style="flex:1;padding:7px 4px" onclick="window.setQuality('low')"><span style="font-size:14px">⚡</span><span class="mode-name">Low</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ONBOARDING MODAL ─────────────────────────────────────── -->
+<div class="onboard-backdrop" id="onboardBackdrop" style="display:none">
+  <div class="onboard-modal">
+    <div class="onboard-icon">🎙</div>
+    <h2 class="onboard-title">Before we start</h2>
+    <p class="onboard-sub">SpeakIQ needs a few permissions to coach you effectively.</p>
+    <div class="onboard-perms">
+      <div class="perm-row"><span class="perm-icon">🎤</span><div><strong>Microphone</strong> — live transcript, filler detection, WPM</div></div>
+      <div class="perm-row"><span class="perm-icon">📷</span><div><strong>Camera</strong> — eye contact &amp; delivery score (optional)</div></div>
+      <div class="perm-row"><span class="perm-icon">🤖</span><div><strong>OpenAI key</strong> — AI coaching &amp; AI voice feedback (optional)</div></div>
+      <div class="perm-row perm-note"><span class="perm-icon">🔒</span><div>Audio &amp; video are processed locally. Nothing is stored on any server.</div></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button class="btn-stop" style="padding:9px 18px;font-size:12px" onclick="window.dismissOnboard()">Maybe later</button>
+      <button class="btn-start" style="padding:9px 22px;font-size:12px;flex:none" onclick="window.confirmOnboard()">Allow &amp; Start</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── MAIN ────────────────────────────────────────────────── -->
 <div class="main">
@@ -452,17 +577,6 @@
 
   <!-- RIGHT: CONTROLS -->
   <div class="controls-panel">
-
-    <!-- API Key -->
-    <div class="cp-section">
-      <div class="sec-label">OpenAI API Key</div>
-      <div class="api-row">
-        <div class="api-input-wrap">
-          <input type="password" class="inp" id="apiKeyInput" placeholder="sk-…  paste your key here">
-          <button class="btn-sm" onclick="window.saveApiKey()" title="Connect">⚡</button>
-        </div>
-      </div>
-    </div>
 
     <!-- Mode -->
     <div class="cp-section">
@@ -551,9 +665,9 @@
             <div class="mring-num" id="ringConfN">—</div>
           </div>
           <div class="metric-info">
-            <div class="metric-label">Confidence</div>
+            <div class="metric-label">Delivery Score</div>
             <div class="metric-val" id="mConf">—</div>
-            <div class="metric-unit">score</div>
+            <div class="metric-unit">est. score</div>
           </div>
         </div>
 
@@ -573,6 +687,24 @@
       <div class="sec-label">Live Transcript</div>
       <div class="transcript-box" id="transcriptBox">
         <span class="empty-hint">Transcript will appear here when session starts…</span>
+      </div>
+    </div>
+
+    <!-- Session History -->
+    <div class="cp-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="sec-label" style="margin-bottom:0">Session History</div>
+        <button class="btn-export" id="exportBtn" onclick="window.exportLastSession()" disabled title="Export last session">↓ Export</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <span class="empty-hint">No sessions yet</span>
+      </div>
+    </div>
+
+    <!-- AI Disclosure -->
+    <div class="cp-section" style="padding:9px 18px">
+      <div style="font-size:9.5px;color:var(--text-3);line-height:1.6">
+        🤖 Voice feedback is AI-generated (OpenAI TTS). Delivery Score is an estimate based on facial cues — not a clinical assessment.
       </div>
     </div>
 
@@ -812,13 +944,11 @@ void main(){
   wave+=snoise(vec3(position.xy*6.0, uTime*2.8))*0.016*uThinkWave*foreheadMask;
   wave+=snoise(vec3(position.xy*9.0, uTime*4.5))*0.008*uThinkWave*templeMask;
 
-  // ── MOUTH / JAW PULSE (audio reactive) ──────────────────
+  // ── MOUTH PULSE (audio reactive — lips only, no jaw spread) ─
   float mouthMask=(aRegion==5.)?1.:0.;
-  // Jaw ripple zone: world-Y in (-0.05 … -0.33) = below nose, above neck
-  float jawMask=smoothstep(-0.05,-0.16,aBaseNY)*smoothstep(-0.33,-0.22,aBaseNY);
-  float mouthWave=sin(uTime*14.0+length(position.xy)*9.0)*uMouthAmp*0.032*mouthMask;
-  float jawRipple=sin(uTime*11.0+position.x*10.0)*uMouthAmp*0.018*jawMask;
-  wave+=mouthWave+jawRipple;
+  // ONLY move mouth-region particles (aRegion==5). No jaw-zone ripple.
+  float mouthWave=sin(uTime*14.0+length(position.xy)*8.0)*uMouthAmp*0.048*mouthMask;
+  wave+=mouthWave;
 
   pos+=nrm*(wave*uIdleAmp);
 
@@ -830,9 +960,11 @@ void main(){
   gl_PointSize=sz*(4.0/max(-mv.z,0.1));
 
   // ── PER-POINT BRIGHTNESS ─────────────────────────────────
+  // Eye glow: only flash on filler-word events — no permanent white glow
   float eyeMask=(aRegion==3.||aRegion==4.)?1.:0.;
-  float eyeGlow=eyeMask*(uListenGlow*0.85+uEyeFlash*0.65);
-  float mGlow  =mouthMask*uMouthAmp*0.50+jawMask*uMouthAmp*0.18;
+  float eyeGlow=eyeMask*uEyeFlash*0.55;
+  // Mouth glow: confined to mouth region only (no jaw-zone spread)
+  float mGlow  =mouthMask*uMouthAmp*0.65;
   // Base from Python Z-depth model; rim drives the bright white silhouette
   float b=pow(aBaseBright, 0.75) * 1.0;
   b = b + rim * 0.88;   // rim brings silhouette to white
@@ -1159,6 +1291,7 @@ animate();
 // APP LOGIC — Speech Recognition, GPT-4o, TTS
 // ═══════════════════════════════════════════════════════════════
 
+const ONBOARD_KEY  = 'speakiq_onboard_v1';
 let currentMode    = 'presentation';
 let sessionOn      = false;
 let sessionStart   = 0;
@@ -1190,8 +1323,20 @@ function setMode(m) {
         interview:    "Interview mode. I'll coach you on confidence, structure, and the STAR method." }[m]);
 }
 
+// ── Proxy detection — use /api/* when running via server.js ──
+// Running on localhost:3000 via our Node proxy → key lives server-side
+const USE_PROXY   = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+                    && location.port === '3000';
+const API_CHAT    = USE_PROXY ? '/api/chat'       : 'https://api.openai.com/v1/chat/completions';
+const API_TTS     = USE_PROXY ? '/api/tts'        : 'https://api.openai.com/v1/audio/speech';
+
 // ── API key (persisted in localStorage) ──────────────────────
 function saveApiKey() {
+  if (USE_PROXY) {
+    // Key lives in server .env — no need to enter it
+    say("Running via SpeakIQ server — API key is configured server-side.");
+    return;
+  }
   const v = document.getElementById('apiKeyInput').value.trim();
   if (!v.startsWith('sk-')) { alert('Enter a valid OpenAI key starting with sk-'); return; }
   apiKey = v;
@@ -1199,12 +1344,25 @@ function saveApiKey() {
   document.getElementById('apiDot').classList.add('on');
   document.getElementById('apiLabel').textContent = 'OpenAI Connected';
   document.getElementById('dotAI').classList.add('on');
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('settingsBtn').classList.remove('active');
   say("OpenAI connected. I'm ready — let's work on your speaking.");
   flashEyes(0.8);
 }
 
-// Restore persisted key on load
+// Restore persisted key on load (direct mode only)
 (function restoreKey() {
+  if (USE_PROXY) {
+    // Signal connected — key is server-side
+    document.getElementById('apiDot').classList.add('on');
+    document.getElementById('apiLabel').textContent = 'Server Connected';
+    document.getElementById('dotAI').classList.add('on');
+    // Hide the key input in settings since it's irrelevant in proxy mode
+    const inp = document.getElementById('apiKeyInput');
+    if (inp) inp.closest('.api-input-wrap').style.display = 'none';
+    apiKey = '__proxy__';  // sentinel — fetch calls go to /api/*
+    return;
+  }
   try {
     const saved = localStorage.getItem('speakiq_apikey');
     if (saved && saved.startsWith('sk-')) {
@@ -1267,6 +1425,13 @@ function say(text, typing = false) {
 // ── Session ──────────────────────────────────────────────────
 async function startSession() {
   if (sessionOn) return;
+  // Show onboarding on first ever session (confirmOnboard calls startSession again)
+  try {
+    if (!localStorage.getItem(ONBOARD_KEY)) {
+      document.getElementById('onboardBackdrop').style.display = 'flex';
+      return;
+    }
+  } catch(_) {}
   // Cancel any pending stop-fade timers so they don't clobber the new session state
   if (stopFadeTimer1) { clearTimeout(stopFadeTimer1); stopFadeTimer1 = null; }
   if (stopFadeTimer2) { clearTimeout(stopFadeTimer2); stopFadeTimer2 = null; }
@@ -1285,6 +1450,9 @@ async function startSession() {
   say(null, true);
   setTimeout(() => say("I'm watching. Take a breath — begin whenever you're ready."), 1000);
   setChip('listening');
+
+  // Lazy-load MediaPipe now (no-op if already loaded)
+  initMediaPipe();
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
@@ -1322,6 +1490,26 @@ function stopSession() {
   stopMPLoop();
   document.getElementById('camPip').style.display = 'none';
   ['dotCam','dotMic'].forEach(id => document.getElementById(id).classList.remove('on'));
+
+  // Save session record to localStorage history
+  const _wpmSnap  = parseInt(document.getElementById('mWpm').textContent, 10) || 0;
+  const _eyeSnap  = parseInt(document.getElementById('mEye').textContent, 10) || 0;
+  const _confSnap = parseInt(document.getElementById('mConf').textContent, 10) || 0;
+  const _fillerTotal = Object.values(fillerCounts).reduce((a,b) => a+b, 0);
+  const _dur = Math.floor((Date.now() - sessionStart) / 1000);
+  saveSession({
+    ts:         Date.now(),
+    mode:       currentMode,
+    duration:   _dur,
+    wpm:        _wpmSnap,
+    eye:        _eyeSnap,
+    delivery:   _confSnap,
+    fillers:    _fillerTotal,
+    fillerMap:  { ...fillerCounts },
+    transcript: fullTranscript.trim().slice(0, 4000)
+  });
+  renderHistory();
+  document.getElementById('exportBtn').disabled = false;
 
   setChip('analyzing'); say(null, true);
   stopFadeTimer1 = setTimeout(() => {
@@ -1428,8 +1616,15 @@ function calcWPM(txt) {
 function renderTranscript() {
   const box = document.getElementById('transcriptBox');
   const ti  = box.querySelector('.ti');
-  let html  = fullTranscript;
+  // XSS safety: escape HTML entities before any innerHTML injection
+  const escaped = fullTranscript
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  let html = escaped;
   FILLERS.forEach(f => {
+    // Escape the filler for use in regex, then highlight in already-escaped text
     const re = new RegExp('\\b(' + f.replace(/\s+/g,'\\s+') + ')\\b', 'gi');
     html = html.replace(re, '<span class="tf">$1</span>');
   });
@@ -1462,33 +1657,51 @@ const EYE_BUF  = [];          // 90-frame (~3s) eye contact readings
 const CONF_BUF = [];          // 60-frame confidence readings
 const HEAD_BUF = [];          // 30-frame head-stability readings
 
-// ── Load MediaPipe model (async, non-blocking) ────────────────
+// ── Load MediaPipe model (lazy — called when session starts) ─
+let mpInitStarted = false;
+
 async function initMediaPipe() {
+  if (mpInitStarted) return;   // only init once
+  mpInitStarted = true;
   try {
     const vision = await FilesetResolver.forVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
     );
-    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-        delegate: 'GPU'
-      },
+    const MP_OPTS = {
       outputFaceBlendshapes: true,
       runningMode: 'VIDEO',
       numFaces: 1,
       minFaceDetectionConfidence: 0.5,
       minFacePresenceConfidence:  0.5,
       minTrackingConfidence:      0.5
-    });
+    };
+    const MODEL_PATH = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+    // Try GPU first; fall back to CPU delegate automatically
+    try {
+      faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_PATH, delegate: 'GPU' }, ...MP_OPTS
+      });
+      console.log('MediaPipe FaceLandmarker ready (GPU)');
+    } catch (gpuErr) {
+      console.warn('GPU delegate failed — retrying with CPU:', gpuErr);
+      faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_PATH, delegate: 'CPU' }, ...MP_OPTS
+      });
+      console.log('MediaPipe FaceLandmarker ready (CPU fallback)');
+    }
     mpReady = true;
-    console.log('MediaPipe FaceLandmarker ready');
   } catch (e) {
-    console.warn('MediaPipe failed to load — metrics will be estimated:', e);
+    console.warn('MediaPipe failed to load — camera metrics unavailable:', e);
     mpReady = false;
+    // Show visible notice on the metrics card
+    ['mEye','mConf'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = 'N/A'; el.className = 'metric-val'; }
+    });
   }
 }
-initMediaPipe();  // kick off immediately; resolves before user starts a session
+// NOTE: initMediaPipe() is now called inside startSession() — not at page load
 
 // ── Iris deviation → eye-contact score (0–1) ─────────────────
 // With refineLandmarks: left iris center = lm[468], right = lm[473]
@@ -1636,10 +1849,13 @@ async function callGPT(interim) {
   const modeMap   = { presentation:'public speaking presentation', debate:'competitive debate', interview:'job interview' };
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const chatHeaders = USE_PROXY
+      ? { 'Content-Type':'application/json' }
+      : { 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey };
+    const res = await fetch(API_CHAT, {
       method: 'POST',
       signal: gptController.signal,
-      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey },
+      headers: chatHeaders,
       body: JSON.stringify({
         model: 'gpt-4o',
         stream: true,
@@ -1701,10 +1917,13 @@ async function speakTTS(text) {
   if (ttsAudioCtx) { ttsAudioCtx.close().catch(() => {}); ttsAudioCtx = null; }
 
   try {
-    const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    const ttsHeaders = USE_PROXY
+      ? { 'Content-Type':'application/json' }
+      : { 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey };
+    const res = await fetch(API_TTS, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey },
-      body: JSON.stringify({ model:'tts-1', input:text, voice:'onyx', response_format:'mp3' })
+      headers: ttsHeaders,
+      body: JSON.stringify({ model:'gpt-4o-mini-tts', input:text, voice:'onyx', response_format:'mp3' })
     });
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
@@ -1747,15 +1966,127 @@ async function speakTTS(text) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS PANEL + ONBOARDING
+// ═══════════════════════════════════════════════════════════════
+
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  const btn   = document.getElementById('settingsBtn');
+  const isOpen = panel.classList.toggle('open');
+  btn.classList.toggle('active', isOpen);
+}
+
+// Close settings when clicking outside it
+document.addEventListener('click', e => {
+  const panel = document.getElementById('settingsPanel');
+  const btn   = document.getElementById('settingsBtn');
+  const apiPill = document.querySelector('.api-status');
+  if (panel.classList.contains('open') &&
+      !panel.contains(e.target) && e.target !== btn && !btn.contains(e.target) &&
+      !apiPill.contains(e.target)) {
+    panel.classList.remove('open');
+    document.getElementById('settingsBtn').classList.remove('active');
+  }
+});
+
+// Quality toggle — adjust particle bloom + count perception
+function setQuality(q) {
+  document.getElementById('q-high').classList.toggle('active', q === 'high');
+  document.getElementById('q-low').classList.toggle('active', q === 'low');
+  if (q === 'low') {
+    bloom.strength = 0.40;
+    bloom.threshold = 0.35;
+  } else {
+    bloom.strength = 0.75;
+    bloom.threshold = 0.22;
+  }
+}
+
+// Onboarding — show once per browser (ONBOARD_KEY declared at top of app vars)
+function checkOnboarding() {
+  try {
+    if (!localStorage.getItem(ONBOARD_KEY)) {
+      document.getElementById('onboardBackdrop').style.display = 'flex';
+    }
+  } catch(_) {}
+}
+function dismissOnboard() {
+  document.getElementById('onboardBackdrop').style.display = 'none';
+  try { localStorage.setItem(ONBOARD_KEY, '1'); } catch(_) {}
+}
+function confirmOnboard() {
+  dismissOnboard();
+  startSession();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION HISTORY + EXPORT
+// ═══════════════════════════════════════════════════════════════
+
+const HIST_KEY = 'speakiq_sessions_v1';
+let lastSession = null;
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(_) { return []; }
+}
+
+function saveSession(session) {
+  try {
+    const sessions = loadHistory();
+    sessions.unshift(session);         // newest first
+    if (sessions.length > 20) sessions.length = 20;   // keep last 20
+    localStorage.setItem(HIST_KEY, JSON.stringify(sessions));
+    lastSession = session;
+  } catch(_) {}
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const sessions = loadHistory();
+  if (!sessions.length) {
+    list.innerHTML = '<span class="empty-hint">No sessions yet</span>';
+    return;
+  }
+  list.innerHTML = sessions.slice(0, 5).map(s => {
+    const d = new Date(s.ts).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    return `<div class="hist-item">
+      <span class="hist-mode">${s.mode}</span>
+      <span>${s.wpm} wpm · ${s.fillers} fillers · ${s.eye}% eye</span>
+      <span class="hist-meta">${d}</span>
+    </div>`;
+  }).join('');
+}
+
+function exportLastSession() {
+  if (!lastSession) return;
+  const blob = new Blob([JSON.stringify(lastSession, null, 2)], { type:'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `speakiq_session_${new Date(lastSession.ts).toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 // ── Expose to HTML onclick ───────────────────────────────────
-window.saveApiKey    = saveApiKey;
-window.setMode       = setMode;
-window.startSession  = startSession;
-window.stopSession   = stopSession;
+window.saveApiKey       = saveApiKey;
+window.setMode          = setMode;
+window.startSession     = startSession;
+window.stopSession      = stopSession;
+window.toggleSettings   = toggleSettings;
+window.setQuality       = setQuality;
+window.dismissOnboard   = dismissOnboard;
+window.confirmOnboard   = confirmOnboard;
+window.exportLastSession = exportLastSession;
 
 // ── Init ─────────────────────────────────────────────────────
-setChip('idle');   // initialise arc + state dot colour
+setChip('idle');
 say('Ready to coach you. Select a mode and press <strong>Start Session</strong>.');
+renderHistory();
+checkOnboarding();
 </script>
 </body>
 </html>
