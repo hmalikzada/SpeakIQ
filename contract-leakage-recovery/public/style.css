@@ -1,0 +1,256 @@
+:root {
+  --bg: #0f1115;
+  --panel: #1a1d24;
+  --panel-border: #2a2e38;
+  --text: #e6e8ec;
+  --text-dim: #9aa0ac;
+  --accent: #4ade80;
+  --accent-dim: #1f4d33;
+  --warn: #f59e0b;
+  --danger: #f87171;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  padding: 32px 24px 16px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.topbar h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.tagline {
+  color: var(--text-dim);
+  margin: 0;
+  max-width: 640px;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.upload-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+input[type="file"] {
+  width: 100%;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.actions {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: #07210f;
+}
+
+.btn.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+}
+
+.status-msg {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.status-msg.error {
+  color: var(--danger);
+}
+
+.hidden {
+  display: none;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 32px;
+}
+
+@media (max-width: 720px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.summary-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.summary-card.highlight {
+  border-color: var(--accent);
+}
+
+.summary-label {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.summary-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+#findings-list {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finding {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+
+.finding-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.finding-type {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.finding-impact {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.finding-desc {
+  margin: 12px 0 0;
+}
+
+.finding-meta {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .finding-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.finding-meta > div {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.finding-meta .label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.confidence {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.confidence.high { color: var(--accent); }
+.confidence.medium { color: var(--warn); }
+.confidence.low { color: var(--text-dim); }
+
+.empty-state {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 32px;
+}

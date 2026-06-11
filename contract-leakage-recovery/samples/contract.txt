@@ -1,0 +1,37 @@
+MASTER SERVICE AGREEMENT
+
+Vendor: CloudOps Software Inc.
+Customer: Acme Manufacturing LLC
+Effective Date: January 1, 2024
+Initial Term: 24 months (January 1, 2024 through December 31, 2025)
+
+1. AUTO-RENEWAL
+This Agreement shall automatically renew for successive 12-month terms unless
+either party provides written notice of non-renewal at least sixty (60) days
+prior to the end of the then-current term.
+
+2. PRICING SCHEDULE
+Per-seat license fees shall be billed monthly according to the following
+volume tiers, based on the total number of active seats:
+
+  - 1 to 100 seats:    $42.00 per seat per month
+  - 101 to 250 seats:  $35.00 per seat per month
+  - 251+ seats:        $28.00 per seat per month
+
+3. ANNUAL PRICE ESCALATION CAP
+Customer's effective per-seat rate shall not increase by more than three
+percent (3%) in any rolling twelve (12) month period, regardless of any
+changes to Vendor's list pricing ("Escalator Cap").
+
+4. PREMIUM SUPPORT
+Customers maintaining one hundred fifty (150) or more active seats are
+entitled to Premium Support at no additional charge for the duration of
+this Agreement.
+
+5. ONE-TIME FEES
+A one-time Platform Setup & Onboarding Fee of $5,000.00 shall be billed on
+Customer's first invoice only, and shall not recur on any subsequent
+invoice.
+
+6. LATE PAYMENT
+Overdue balances accrue a late fee of 1.5% per month.

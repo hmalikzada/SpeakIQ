@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contract Leakage Recovery</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Contract Leakage Recovery</h1>
+    <p class="tagline">Find money hiding in your vendor contracts — upload a contract and its invoices, get flagged overcharges in seconds.</p>
+  </header>
+
+  <main>
+    <section id="upload-card" class="card">
+      <form id="analyze-form">
+        <div class="upload-grid">
+          <div class="upload-field">
+            <label for="contract-file">Vendor contract <span class="hint">(PDF or .txt — 1 file)</span></label>
+            <input type="file" id="contract-file" name="contract" accept=".pdf,.txt" />
+          </div>
+          <div class="upload-field">
+            <label for="invoice-files">Invoices to check <span class="hint">(PDF, .txt, or .csv — up to 10)</span></label>
+            <input type="file" id="invoice-files" name="invoices" accept=".pdf,.txt,.csv" multiple />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" id="analyze-btn" class="btn primary">Analyze</button>
+          <button type="button" id="sample-btn" class="btn secondary">Try sample data</button>
+          <span id="status-msg" class="status-msg"></span>
+        </div>
+      </form>
+    </section>
+
+    <section id="results" class="hidden">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">Monthly leakage found</div>
+          <div class="summary-value" id="sum-monthly">$0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Annual recoverable</div>
+          <div class="summary-value" id="sum-annual">$0</div>
+        </div>
+        <div class="summary-card highlight">
+          <div class="summary-label">Suggested fee (25% contingency)</div>
+          <div class="summary-value" id="sum-fee">$0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Findings</div>
+          <div class="summary-value" id="sum-count">0</div>
+        </div>
+      </div>
+
+      <div id="findings-list"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

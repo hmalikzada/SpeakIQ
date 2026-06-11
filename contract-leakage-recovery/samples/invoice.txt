@@ -1,0 +1,18 @@
+INVOICE
+
+CloudOps Software Inc.
+Bill To: Acme Manufacturing LLC
+Invoice #: CO-2025-0114
+Invoice Date: January 5, 2025
+Billing Period: January 1, 2025 – January 31, 2025
+
+----------------------------------------------------------------
+Description                              Qty       Unit Price      Amount
+----------------------------------------------------------------
+Per-seat license fee                     180       $39.00          $7,020.00
+Premium Support (Tier 2)                 1         $750.00         $750.00
+Platform Setup & Onboarding Fee          1         $5,000.00       $5,000.00
+----------------------------------------------------------------
+                                                      TOTAL:        $12,770.00
+
+Payment due within 30 days of invoice date.
