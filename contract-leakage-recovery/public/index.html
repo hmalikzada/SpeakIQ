@@ -118,9 +118,43 @@
         <h2 class="findings-title">Detailed findings</h2>
         <div id="findings-list"></div>
 
+        <section id="legal" class="legal hidden">
+          <div class="legal-head">
+            <span class="legal-icon">⚖</span>
+            <div>
+              <h2>Legal advisory</h2>
+              <p>Where this relationship stands legally, and how to move forward.</p>
+            </div>
+            <span class="status-pill" id="legal-status"></span>
+          </div>
+
+          <p class="legal-status-expl" id="legal-status-expl"></p>
+
+          <div class="legal-block">
+            <h3>What governs the relationship now</h3>
+            <p id="legal-governing"></p>
+          </div>
+
+          <div class="legal-cols">
+            <div class="legal-block">
+              <h3>Risks of continuing as-is</h3>
+              <ul id="legal-risks" class="risk-list"></ul>
+            </div>
+            <div class="legal-block">
+              <h3>Your leverage</h3>
+              <ul id="legal-leverage" class="leverage-list"></ul>
+            </div>
+          </div>
+
+          <div class="legal-block">
+            <h3>Recommended path forward</h3>
+            <ol id="legal-path" class="path-list"></ol>
+          </div>
+        </section>
+
         <p class="disclaimer">
-          AI-generated analysis — verify each finding against the source documents before
-          contacting your vendor.
+          AI-generated analysis for informational purposes — not legal advice. Verify each
+          finding against the source documents and consult licensed counsel before acting.
         </p>
       </section>
     </main>

@@ -155,7 +155,7 @@ function setStatus(msg, isError = false) {
 
 /* ── Rendering ──────────────────────────────────────────────── */
 function renderResults(data) {
-  const { findings, summary, executiveSummary } = data;
+  const { findings, summary, executiveSummary, legal } = data;
 
   document.getElementById('exec-summary').textContent =
     executiveSummary || 'Analysis complete — see the detailed findings below.';
@@ -179,7 +179,70 @@ function renderResults(data) {
     }
   }
 
+  renderLegal(legal);
+
   results.classList.remove('hidden');
+}
+
+const STATUS_LABELS = {
+  active: 'Contract active',
+  expired_holdover: 'Expired — billing continues',
+  auto_renewed: 'Auto-renewed',
+  expiring_soon: 'Expiring soon',
+  unclear: 'Status unclear',
+};
+
+function renderLegal(legal) {
+  const section = document.getElementById('legal');
+  if (!legal) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  const statusEl = document.getElementById('legal-status');
+  const status = legal.contractStatus || 'unclear';
+  statusEl.textContent = STATUS_LABELS[status] || STATUS_LABELS.unclear;
+  statusEl.className = `status-pill st-${status}`;
+
+  document.getElementById('legal-status-expl').textContent = legal.statusExplanation || '';
+  document.getElementById('legal-governing').textContent = legal.governingAnalysis || '—';
+
+  const risksEl = document.getElementById('legal-risks');
+  risksEl.innerHTML = '';
+  for (const r of legal.risks || []) {
+    const li = document.createElement('li');
+    const sev = ['high', 'medium', 'low'].includes(r.severity) ? r.severity : 'low';
+    li.innerHTML = `<span class="risk-dot ${sev}"></span>`;
+    li.append(document.createTextNode(r.risk || ''));
+    risksEl.appendChild(li);
+  }
+  if (!risksEl.children.length) risksEl.innerHTML = '<li>None identified.</li>';
+
+  const levEl = document.getElementById('legal-leverage');
+  levEl.innerHTML = '';
+  for (const point of legal.leveragePoints || []) {
+    const li = document.createElement('li');
+    li.textContent = point;
+    levEl.appendChild(li);
+  }
+  if (!levEl.children.length) levEl.innerHTML = '<li>None identified.</li>';
+
+  const pathEl = document.getElementById('legal-path');
+  pathEl.innerHTML = '';
+  const steps = [...(legal.recommendedPath || [])].sort(
+    (a, b) => (a.step || 0) - (b.step || 0)
+  );
+  for (const s of steps) {
+    const li = document.createElement('li');
+    const action = document.createElement('strong');
+    action.textContent = s.action || '';
+    const detail = document.createElement('span');
+    detail.textContent = s.detail ? ` — ${s.detail}` : '';
+    li.append(action, detail);
+    pathEl.appendChild(li);
+  }
+
+  section.classList.remove('hidden');
 }
 
 function renderFinding(f) {

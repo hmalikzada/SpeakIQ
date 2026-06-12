@@ -42,13 +42,69 @@ If you find nothing, return { "executive_summary": "...", "findings": [] } with 
 export async function findDiscrepancies(contract, invoices) {
   const result = await chatJSON([
     { role: 'system', content: MATCH_SYSTEM_PROMPT },
-    { role: 'user', content: JSON.stringify({ contract, invoices }) },
+    {
+      role: 'user',
+      content: JSON.stringify({ today: todayISO(), contract, invoices }),
+    },
   ]);
 
   return {
     executiveSummary: typeof result.executive_summary === 'string' ? result.executive_summary : '',
     findings: Array.isArray(result.findings) ? result.findings : [],
   };
+}
+
+const LEGAL_SYSTEM_PROMPT = `You are outside counsel advising a company on its commercial vendor relationships.
+You will be given today's date, the structured terms of a vendor contract (possibly with amendments),
+and the invoices the vendor has been sending.
+
+A very common situation: the contract term has ENDED, no renewal was signed, and yet the vendor keeps
+invoicing and the company keeps paying. Assess the legal posture of this relationship and advise the
+company on how to move forward.
+
+Return a single JSON object with this shape:
+{
+  "contract_status": "active | expired_holdover | auto_renewed | expiring_soon | unclear",
+  "status_explanation": "2-3 sentences: compare the contract term dates against today's date and the invoice dates, state plainly whether the contract is live, auto-renewed, or expired with billing continuing",
+  "governing_analysis": "3-5 sentences in plain English: what likely governs the relationship right now (e.g. the auto-renewal clause, a month-to-month implied contract on the old terms via continued performance and course of dealing), and what that means for which prices/discounts/caps the company can still hold the vendor to",
+  "risks": [
+    { "risk": "one-sentence risk of continuing as-is", "severity": "high | medium | low" }
+  ],
+  "leverage_points": [
+    "one-sentence negotiation lever the company holds right now (e.g. no termination penalty applies after expiry, vendor needs the signed renewal more than you do, billing errors give grounds for credits)"
+  ],
+  "recommended_path": [
+    { "step": 1, "action": "short imperative headline", "detail": "1-2 sentences on exactly what to do and why" }
+  ]
+}
+
+Ground every statement in the supplied dates, terms, and invoices — do not invent facts. Where the
+documents are silent, reason from general commercial-contract principles and say you are doing so.
+Keep "recommended_path" to 3-5 concrete steps ordered by urgency (e.g. send a reservation-of-rights
+letter, dispute the overcharges in writing, set the renewal deadline, renegotiate from documented
+leverage). This is practical guidance for a business audience, not a legal memorandum.`;
+
+export async function legalAdvisory(contract, invoices) {
+  const result = await chatJSON([
+    { role: 'system', content: LEGAL_SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: JSON.stringify({ today: todayISO(), contract, invoices }),
+    },
+  ]);
+
+  return {
+    contractStatus: result.contract_status || 'unclear',
+    statusExplanation: result.status_explanation || '',
+    governingAnalysis: result.governing_analysis || '',
+    risks: Array.isArray(result.risks) ? result.risks : [],
+    leveragePoints: Array.isArray(result.leverage_points) ? result.leverage_points : [],
+    recommendedPath: Array.isArray(result.recommended_path) ? result.recommended_path : [],
+  };
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function summarize(findings) {

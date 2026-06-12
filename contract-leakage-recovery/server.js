@@ -23,7 +23,7 @@ import { readFile } from 'fs/promises';
 
 import { hasApiKey } from './lib/openai.js';
 import { fileToText, extractContractTerms, extractInvoice } from './lib/extract.js';
-import { findDiscrepancies, summarize } from './lib/matcher.js';
+import { findDiscrepancies, legalAdvisory, summarize } from './lib/matcher.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -87,10 +87,13 @@ app.post(
         invoices.push(invoice);
       }
 
-      const { executiveSummary, findings } = await findDiscrepancies(contract, invoices);
+      const [{ executiveSummary, findings }, legal] = await Promise.all([
+        findDiscrepancies(contract, invoices),
+        legalAdvisory(contract, invoices),
+      ]);
       const summary = summarize(findings);
 
-      res.json({ contract, invoices, findings, executiveSummary, summary });
+      res.json({ contract, invoices, findings, executiveSummary, legal, summary });
     } catch (e) {
       console.error('/api/analyze error:', e);
       res.status(500).json({ error: e.message });
@@ -114,10 +117,13 @@ app.post('/api/analyze-sample', async (req, res) => {
     const invoice = await extractInvoice(invoiceText);
     const invoices = [invoice];
 
-    const { executiveSummary, findings } = await findDiscrepancies(contract, invoices);
+    const [{ executiveSummary, findings }, legal] = await Promise.all([
+      findDiscrepancies(contract, invoices),
+      legalAdvisory(contract, invoices),
+    ]);
     const summary = summarize(findings);
 
-    res.json({ contract, invoices, findings, executiveSummary, summary });
+    res.json({ contract, invoices, findings, executiveSummary, legal, summary });
   } catch (e) {
     console.error('/api/analyze-sample error:', e);
     res.status(500).json({ error: e.message });
