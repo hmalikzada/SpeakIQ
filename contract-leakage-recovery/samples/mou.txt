@@ -1,0 +1,23 @@
+MEMORANDUM OF UNDERSTANDING — AMENDMENT NO. 1
+
+Between: CloudOps Software Inc. ("Vendor")
+And:     Acme Manufacturing LLC ("Customer")
+Effective Date: July 1, 2024
+
+Reference: Master Service Agreement dated January 1, 2024
+
+The parties agree as follows:
+
+1. LOYALTY DISCOUNT
+In recognition of Customer's expanded deployment, Vendor shall apply a
+five percent (5%) Loyalty Discount to all per-seat license fees on every
+invoice issued on or after July 1, 2024, for the remainder of the
+Agreement term and any renewal term.
+
+2. ALL OTHER TERMS
+All other terms of the Master Service Agreement, including the volume
+pricing tiers, the 3% annual escalation cap, and the Premium Support
+entitlement, remain unchanged and in full force.
+
+Signed,
+CloudOps Software Inc. / Acme Manufacturing LLC

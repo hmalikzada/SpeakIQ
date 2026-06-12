@@ -3,60 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contract Leakage Recovery</title>
+  <title>Contract Leakage Recovery — AI Vendor Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>Contract Leakage Recovery</h1>
-    <p class="tagline">Find money hiding in your vendor contracts — upload a contract and its invoices, get flagged overcharges in seconds.</p>
-  </header>
+  <div class="page">
+    <header class="hero">
+      <div class="brand">
+        <span class="brand-mark">◈</span> LeakAudit
+      </div>
+      <h1>Find the money hiding<br /><em>in your vendor contracts.</em></h1>
+      <p class="hero-sub">
+        Upload a contract — with any MOUs or amendments — plus the invoices that vendor sent you.
+        Our AI auditor cross-references every line item against your negotiated terms and flags
+        overcharges, missed discounts, and renewal traps, each with the clause that proves it.
+      </p>
+    </header>
 
-  <main>
-    <section id="upload-card" class="card">
-      <form id="analyze-form">
-        <div class="upload-grid">
-          <div class="upload-field">
-            <label for="contract-file">Vendor contract <span class="hint">(PDF or .txt — 1 file)</span></label>
-            <input type="file" id="contract-file" name="contract" accept=".pdf,.txt" />
-          </div>
-          <div class="upload-field">
-            <label for="invoice-files">Invoices to check <span class="hint">(PDF, .txt, or .csv — up to 10)</span></label>
-            <input type="file" id="invoice-files" name="invoices" accept=".pdf,.txt,.csv" multiple />
-          </div>
+    <main>
+      <form id="analyze-form" class="workflow">
+        <div class="steps">
+          <section class="step">
+            <div class="step-head">
+              <span class="step-num">1</span>
+              <div>
+                <h2>The contract</h2>
+                <p>The master agreement with this vendor. <span class="req">Required</span></p>
+              </div>
+            </div>
+            <div class="dropzone" id="dz-contract" data-kind="contract">
+              <input type="file" id="contract-file" accept=".pdf,.txt" hidden />
+              <div class="dz-icon">📄</div>
+              <div class="dz-label">Drop the contract here<br /><span>or tap to browse — PDF or .txt</span></div>
+            </div>
+            <ul class="file-list" id="list-contract"></ul>
+          </section>
+
+          <section class="step">
+            <div class="step-head">
+              <span class="step-num">2</span>
+              <div>
+                <h2>MOUs &amp; amendments</h2>
+                <p>Side letters, renewals, anything that changed the deal. <span class="opt">Optional</span></p>
+              </div>
+            </div>
+            <div class="dropzone" id="dz-supporting" data-kind="supporting">
+              <input type="file" id="supporting-files" accept=".pdf,.txt" multiple hidden />
+              <div class="dz-icon">📎</div>
+              <div class="dz-label">Drop supporting documents<br /><span>up to 10 files</span></div>
+            </div>
+            <ul class="file-list" id="list-supporting"></ul>
+          </section>
+
+          <section class="step">
+            <div class="step-head">
+              <span class="step-num">3</span>
+              <div>
+                <h2>The invoices</h2>
+                <p>What this vendor actually billed you. <span class="req">Required</span></p>
+              </div>
+            </div>
+            <div class="dropzone" id="dz-invoices" data-kind="invoices">
+              <input type="file" id="invoice-files" accept=".pdf,.txt,.csv" multiple hidden />
+              <div class="dz-icon">🧾</div>
+              <div class="dz-label">Drop invoices here<br /><span>up to 10 — PDF, .txt, or .csv</span></div>
+            </div>
+            <ul class="file-list" id="list-invoices"></ul>
+          </section>
         </div>
 
         <div class="actions">
-          <button type="submit" id="analyze-btn" class="btn primary">Analyze</button>
-          <button type="button" id="sample-btn" class="btn secondary">Try sample data</button>
-          <span id="status-msg" class="status-msg"></span>
+          <button type="submit" id="analyze-btn" class="btn primary">Run expert analysis</button>
+          <button type="button" id="sample-btn" class="btn ghost">Try sample data</button>
         </div>
+        <p id="status-msg" class="status-msg" role="status"></p>
       </form>
-    </section>
 
-    <section id="results" class="hidden">
-      <div class="summary-grid">
-        <div class="summary-card">
-          <div class="summary-label">Monthly leakage found</div>
-          <div class="summary-value" id="sum-monthly">$0</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">Annual recoverable</div>
-          <div class="summary-value" id="sum-annual">$0</div>
-        </div>
-        <div class="summary-card highlight">
-          <div class="summary-label">Suggested fee (25% contingency)</div>
-          <div class="summary-value" id="sum-fee">$0</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">Findings</div>
-          <div class="summary-value" id="sum-count">0</div>
-        </div>
+      <div id="loading" class="loading hidden">
+        <div class="loading-spinner"></div>
+        <p id="loading-step">Reading contract &amp; supporting documents…</p>
       </div>
 
-      <div id="findings-list"></div>
-    </section>
-  </main>
+      <section id="results" class="results hidden">
+        <article class="memo">
+          <div class="memo-head">
+            <span class="memo-stamp">Audit memo</span>
+            <h2>Executive summary</h2>
+          </div>
+          <p id="exec-summary"></p>
+        </article>
+
+        <div class="summary-grid">
+          <div class="metric">
+            <div class="metric-label">Monthly leakage</div>
+            <div class="metric-value" id="sum-monthly">$0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Annual recoverable</div>
+            <div class="metric-value danger" id="sum-annual">$0</div>
+          </div>
+          <div class="metric accent">
+            <div class="metric-label">Our fee (25% of recovery)</div>
+            <div class="metric-value" id="sum-fee">$0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Findings</div>
+            <div class="metric-value" id="sum-count">0</div>
+          </div>
+        </div>
+
+        <h2 class="findings-title">Detailed findings</h2>
+        <div id="findings-list"></div>
+
+        <p class="disclaimer">
+          AI-generated analysis — verify each finding against the source documents before
+          contacting your vendor.
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer">LeakAudit · AI contract-compliance auditing</footer>
+  </div>
 
   <script src="app.js"></script>
 </body>

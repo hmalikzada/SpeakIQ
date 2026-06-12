@@ -28,15 +28,19 @@ npm start
 
 Open http://localhost:3001
 
-Click **"Try sample data"** to run the bundled demo contract/invoice
-(`samples/`), which contains three intentional issues:
+Click **"Try sample data"** to run the bundled demo contract + MOU +
+invoice (`samples/`), which contains four intentional issues:
 
 - An escalator-cap violation (rate increased >3% year-over-year)
 - A missed "Premium Support included" discount
 - A duplicate one-time setup fee
+- A missed 5% loyalty discount granted by the MOU amendment
 
-Or upload your own contract (PDF/.txt) and invoices (PDF/.txt/.csv) via
-the form.
+Or upload your own documents via the three-step form: the contract
+(PDF/.txt), any MOUs/amendments/side letters (optional, up to 10), and
+the invoices to check (PDF/.txt/.csv, up to 10). Amendment terms
+override the base contract during extraction. The analysis returns an
+executive-summary audit memo plus severity-ranked findings.
 
 ## Notes on this prototype
 

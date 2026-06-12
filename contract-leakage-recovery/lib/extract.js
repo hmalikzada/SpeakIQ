@@ -22,7 +22,10 @@ export async function fileToText(file) {
 }
 
 const CONTRACT_SYSTEM_PROMPT = `You are a contract analysis assistant for a financial audit tool.
-Read the supplied vendor contract text and extract every term that affects pricing or billing.
+Read the supplied vendor contract text — which may be followed by supporting documents such as
+MOUs, amendments, side letters, or renewal notices — and extract every term that affects pricing
+or billing. Terms in a later amendment/MOU override the base contract; capture the final effective
+terms and note in "notes" when an amendment changed something.
 
 Return a single JSON object with this shape:
 {

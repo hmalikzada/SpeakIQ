@@ -54,6 +54,7 @@ app.post(
   '/api/analyze',
   upload.fields([
     { name: 'contract', maxCount: 1 },
+    { name: 'supporting', maxCount: 10 },
     { name: 'invoices', maxCount: 10 },
   ]),
   async (req, res) => {
@@ -63,6 +64,7 @@ app.post(
 
     try {
       const contractFile = req.files?.contract?.[0];
+      const supportingFiles = req.files?.supporting || [];
       const invoiceFiles = req.files?.invoices || [];
 
       if (!contractFile || invoiceFiles.length === 0) {
@@ -71,7 +73,11 @@ app.post(
           .json({ error: 'Please upload one contract file and at least one invoice file.' });
       }
 
-      const contractText = await fileToText(contractFile);
+      let contractText = await fileToText(contractFile);
+      for (const file of supportingFiles) {
+        const text = await fileToText(file);
+        contractText += `\n\n===== SUPPORTING DOCUMENT: ${file.originalname} =====\n\n${text}`;
+      }
       const contract = await extractContractTerms(contractText);
 
       const invoices = [];
@@ -81,10 +87,10 @@ app.post(
         invoices.push(invoice);
       }
 
-      const findings = await findDiscrepancies(contract, invoices);
+      const { executiveSummary, findings } = await findDiscrepancies(contract, invoices);
       const summary = summarize(findings);
 
-      res.json({ contract, invoices, findings, summary });
+      res.json({ contract, invoices, findings, executiveSummary, summary });
     } catch (e) {
       console.error('/api/analyze error:', e);
       res.status(500).json({ error: e.message });
@@ -100,16 +106,18 @@ app.post('/api/analyze-sample', async (req, res) => {
 
   try {
     const contractText = await readFile(join(__dirname, 'samples', 'contract.txt'), 'utf8');
+    const mouText = await readFile(join(__dirname, 'samples', 'mou.txt'), 'utf8');
     const invoiceText = await readFile(join(__dirname, 'samples', 'invoice.txt'), 'utf8');
 
-    const contract = await extractContractTerms(contractText);
+    const combinedContract = `${contractText}\n\n===== SUPPORTING DOCUMENT: mou.txt =====\n\n${mouText}`;
+    const contract = await extractContractTerms(combinedContract);
     const invoice = await extractInvoice(invoiceText);
     const invoices = [invoice];
 
-    const findings = await findDiscrepancies(contract, invoices);
+    const { executiveSummary, findings } = await findDiscrepancies(contract, invoices);
     const summary = summarize(findings);
 
-    res.json({ contract, invoices, findings, summary });
+    res.json({ contract, invoices, findings, executiveSummary, summary });
   } catch (e) {
     console.error('/api/analyze-sample error:', e);
     res.status(500).json({ error: e.message });
