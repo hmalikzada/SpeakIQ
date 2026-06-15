@@ -754,6 +754,7 @@ async function downloadGroupReport(group, btn) {
 
 /* ── Auth + session ─────────────────────────────────────────── */
 function showApp(user, usage) {
+  document.body.classList.remove('logged-out');
   authScreen.classList.add('hidden');
   appMain.classList.remove('hidden');
   userBar.classList.remove('hidden');
@@ -762,6 +763,7 @@ function showApp(user, usage) {
 }
 
 function showAuth() {
+  document.body.classList.add('logged-out');
   appMain.classList.add('hidden');
   userBar.classList.add('hidden');
   authScreen.classList.remove('hidden');

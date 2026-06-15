@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="logged-out">
   <div class="page">
     <div id="user-bar" class="user-bar hidden">
       <span class="ub-email" id="ub-email"></span>
@@ -34,6 +34,10 @@
     </header>
 
     <section id="auth-screen" class="auth-screen hidden">
+      <div class="auth-intro">
+        <h2>Find the money hiding in your vendor contracts</h2>
+        <p>Sign in to run an audit, or create a free account to get started.</p>
+      </div>
       <div class="auth-card">
         <div class="auth-tabs" role="tablist">
           <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
