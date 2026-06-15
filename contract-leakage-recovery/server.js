@@ -39,19 +39,33 @@ import {
   requireAuth,
   createUser,
   findUserByEmail,
+  findUserById,
+  findUserByStripeCustomer,
+  updateUser,
   verifyPassword,
   createSession,
   destroySession,
   sessionCookieOptions,
 } from './lib/auth.js';
 import { saveAudit, listAudits, getAudit, auditsThisMonth } from './lib/audits.js';
-import { planFor } from './lib/plans.js';
+import { planFor, publicPlans } from './lib/plans.js';
+import {
+  stripe,
+  WEBHOOK_SECRET,
+  billingEnabled,
+  priceIdForPlan,
+  planForPriceId,
+} from './lib/billing.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Behind Railway's proxy: trust X-Forwarded-Proto so req.protocol is https
+// (used to build Stripe redirect URLs) and rate-limiting sees the real IP.
+app.set('trust proxy', 1);
 
 if (!hasApiKey()) {
   console.error('\n⚠️  OPENAI_API_KEY is not set in .env — analysis will not work.\n');
@@ -82,6 +96,11 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map((s) => s.trim())
   .filter(Boolean);
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false, credentials: true }));
+
+// Stripe webhook — must run BEFORE the JSON body parser (it needs the raw body
+// for signature verification) and BEFORE the Basic Auth gate (Stripe can't send
+// credentials). Registered as a route so it only intercepts its own path.
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
 
 // Optional HTTP Basic Auth gate (defence in depth; leave unset to disable).
 app.use(basicAuth);
@@ -163,8 +182,69 @@ app.post('/api/auth/logout', sameOrigin, async (req, res) => {
 });
 
 app.get('/api/me', async (req, res) => {
-  if (!req.user) return res.json({ user: null });
-  res.json({ user: publicUser(req.user), usage: await usageFor(req.user) });
+  if (!req.user) return res.json({ user: null, billingEnabled: billingEnabled() });
+  res.json({
+    user: publicUser(req.user),
+    usage: await usageFor(req.user),
+    billingEnabled: billingEnabled(),
+  });
+});
+
+// ── Billing ───────────────────────────────────────────────────
+app.get('/api/plans', (req, res) => {
+  res.json({ plans: publicPlans(), billingEnabled: billingEnabled() });
+});
+
+// Start a Stripe Checkout session to subscribe to a paid plan.
+app.post('/api/billing/checkout', requireDb, sameOrigin, requireAuth, async (req, res) => {
+  if (!billingEnabled()) {
+    return res.status(503).json({ error: 'Billing is not configured on this server.' });
+  }
+  try {
+    const { plan } = req.body || {};
+    const priceId = priceIdForPlan(plan);
+    if (!priceId) {
+      return res.status(400).json({ error: 'That plan is not available for checkout.' });
+    }
+
+    const customerId = await ensureStripeCustomer(req.user);
+    const base = baseUrl(req);
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      client_reference_id: req.user.id,
+      metadata: { userId: req.user.id, plan },
+      success_url: `${base}/?upgraded=1`,
+      cancel_url: `${base}/?canceled=1`,
+      allow_promotion_codes: true,
+    });
+
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('/api/billing/checkout error:', e);
+    res.status(500).json({ error: 'Could not start checkout. Please try again.' });
+  }
+});
+
+// Open the Stripe Customer Portal so users manage/cancel their subscription.
+app.post('/api/billing/portal', requireDb, sameOrigin, requireAuth, async (req, res) => {
+  if (!billingEnabled()) {
+    return res.status(503).json({ error: 'Billing is not configured on this server.' });
+  }
+  try {
+    if (!req.user.stripeCustomerId) {
+      return res.status(400).json({ error: 'No billing account yet — subscribe to a plan first.' });
+    }
+    const session = await stripe.billingPortal.sessions.create({
+      customer: req.user.stripeCustomerId,
+      return_url: baseUrl(req),
+    });
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('/api/billing/portal error:', e);
+    res.status(500).json({ error: 'Could not open the billing portal. Please try again.' });
+  }
 });
 
 // ── /api/analyze — extract + cross-reference contract vs invoices ──
@@ -453,6 +533,93 @@ async function startSession(res, userId) {
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
 }
 
+function baseUrl(req) {
+  return process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+}
+
+// Reuse the user's Stripe customer, creating one on first checkout.
+async function ensureStripeCustomer(user) {
+  if (user.stripeCustomerId) return user.stripeCustomerId;
+  const customer = await stripe.customers.create({
+    email: user.email,
+    name: user.name || undefined,
+    metadata: { userId: user.id },
+  });
+  await updateUser(user.id, { stripeCustomerId: customer.id });
+  user.stripeCustomerId = customer.id;
+  return customer.id;
+}
+
+// Stripe webhook: keep the user's plan in sync with their subscription.
+async function stripeWebhook(req, res) {
+  if (!billingEnabled() || !WEBHOOK_SECRET) return res.status(503).end();
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.get('stripe-signature'), WEBHOOK_SECRET);
+  } catch (e) {
+    console.error('Stripe webhook signature verification failed:', e.message);
+    return res.status(400).send(`Webhook Error: ${e.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const s = event.data.object;
+        const userId = s.client_reference_id || s.metadata?.userId;
+        if (userId) {
+          await updateUser(userId, {
+            stripeCustomerId: idOf(s.customer),
+            stripeSubscriptionId: idOf(s.subscription),
+            subscriptionStatus: 'active',
+            ...(s.metadata?.plan ? { plan: s.metadata.plan } : {}),
+          });
+        }
+        break;
+      }
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const user = await findUserByStripeCustomer(idOf(sub.customer));
+        if (user) {
+          const plan = planForPriceId(sub.items?.data?.[0]?.price?.id);
+          const active = ['active', 'trialing'].includes(sub.status);
+          await updateUser(user.id, {
+            stripeSubscriptionId: sub.id,
+            subscriptionStatus: sub.status,
+            plan: active && plan ? plan : active ? user.plan : 'free',
+          });
+        }
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        const user = await findUserByStripeCustomer(idOf(sub.customer));
+        if (user) {
+          await updateUser(user.id, {
+            plan: 'free',
+            subscriptionStatus: 'canceled',
+            stripeSubscriptionId: null,
+          });
+        }
+        break;
+      }
+      default:
+        break;
+    }
+    res.json({ received: true });
+  } catch (e) {
+    console.error('Stripe webhook handler error:', e);
+    res.status(500).end();
+  }
+}
+
+// Stripe fields can be an id string or an expanded object.
+function idOf(v) {
+  if (!v) return undefined;
+  return typeof v === 'string' ? v : v.id;
+}
+
 function requireDb(req, res, next) {
   if (!hasDb()) {
     return res.status(503).json({ error: 'Accounts are not configured on this server.' });
@@ -526,5 +693,6 @@ app.listen(PORT, () => {
   console.log(`\n✅  ClauseGuard running at http://localhost:${PORT}`);
   console.log(`   OpenAI key: ${hasApiKey() ? '✓ loaded from .env' : '✗ NOT SET — add OPENAI_API_KEY to .env'}`);
   console.log(`   Auth gate:  ${BASIC_USER && BASIC_PASS ? '✓ Basic Auth enabled' : '✗ open (set BASIC_AUTH_USER/PASS to lock down)'}`);
+  console.log(`   Billing:    ${billingEnabled() ? '✓ Stripe connected' : '✗ not configured (set STRIPE_SECRET_KEY)'}`);
   console.log(`   Rate limit: ${Number(process.env.ANALYZE_RATE_LIMIT) || 20} analyses / IP / hour\n`);
 });

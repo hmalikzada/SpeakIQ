@@ -14,6 +14,7 @@
     <div id="user-bar" class="user-bar hidden">
       <span class="ub-email" id="ub-email"></span>
       <span class="ub-usage" id="ub-usage"></span>
+      <button type="button" id="plans-btn" class="ub-btn hidden">Plans</button>
       <button type="button" id="history-btn" class="ub-btn">Audit history</button>
       <button type="button" id="logout-btn" class="ub-btn">Sign out</button>
     </div>
@@ -70,6 +71,16 @@
           <button type="button" id="history-close" class="ub-btn">Close</button>
         </div>
         <ul id="history-list" class="history-list"></ul>
+      </section>
+
+      <section id="pricing-panel" class="history-panel hidden">
+        <div class="history-head">
+          <h2>Plans &amp; billing</h2>
+          <button type="button" id="pricing-close" class="ub-btn">Close</button>
+        </div>
+        <p id="billing-msg" class="billing-msg"></p>
+        <div id="pricing-grid" class="pricing-grid"></div>
+        <div id="pricing-actions" class="pricing-actions"></div>
       </section>
 
       <div class="mode-toggle" role="tablist">

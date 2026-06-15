@@ -44,6 +44,22 @@ export async function findUserById(id) {
   return user || null;
 }
 
+export async function findUserByStripeCustomer(customerId) {
+  if (!customerId) return null;
+  const [user] = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.stripeCustomerId, customerId));
+  return user || null;
+}
+
+/** Patch billing-related fields (plan, stripe ids, status) on a user. */
+export async function updateUser(userId, fields) {
+  const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+  if (Object.keys(clean).length === 0) return;
+  await db.update(schema.users).set(clean).where(eq(schema.users.id, userId));
+}
+
 export async function verifyPassword(password, hash) {
   return bcrypt.compare(password, hash);
 }

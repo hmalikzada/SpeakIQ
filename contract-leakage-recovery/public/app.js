@@ -34,8 +34,17 @@ const historyPanel = document.getElementById('history-panel');
 const historyClose = document.getElementById('history-close');
 const historyList = document.getElementById('history-list');
 
+const plansBtn = document.getElementById('plans-btn');
+const pricingPanel = document.getElementById('pricing-panel');
+const pricingClose = document.getElementById('pricing-close');
+const pricingGrid = document.getElementById('pricing-grid');
+const pricingActions = document.getElementById('pricing-actions');
+const billingMsg = document.getElementById('billing-msg');
+
 let lastAnalysis = null;
 let authMode = 'login';
+let currentPlan = 'free';
+let billingEnabled = false;
 
 const fmtUsd = (n) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
@@ -759,7 +768,11 @@ function showApp(user, usage) {
   appMain.classList.remove('hidden');
   userBar.classList.remove('hidden');
   ubEmail.textContent = user.name ? `${user.name} · ${user.email}` : user.email;
-  if (usage) setUsage(usage);
+  if (usage) {
+    setUsage(usage);
+    currentPlan = usage.plan;
+  }
+  plansBtn.classList.toggle('hidden', !billingEnabled);
 }
 
 function showAuth() {
@@ -781,6 +794,7 @@ async function refreshSession() {
   try {
     const res = await fetch('/api/me');
     const data = await res.json();
+    billingEnabled = Boolean(data.billingEnabled);
     if (data.user) showApp(data.user, data.usage);
     else showAuth();
   } catch {
@@ -932,5 +946,136 @@ async function viewAudit(id) {
   }
 }
 
+/* ── Plans & billing ────────────────────────────────────────── */
+plansBtn.addEventListener('click', openPlans);
+pricingClose.addEventListener('click', () => pricingPanel.classList.add('hidden'));
+
+async function openPlans() {
+  billingMsg.textContent = '';
+  pricingGrid.innerHTML = '<p class="history-empty">Loading…</p>';
+  pricingActions.innerHTML = '';
+  pricingPanel.classList.remove('hidden');
+  pricingPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const res = await fetch('/api/plans');
+    const { plans = [] } = await res.json();
+    renderPlans(plans);
+  } catch {
+    pricingGrid.innerHTML = '<p class="history-empty">Could not load plans.</p>';
+  }
+}
+
+function renderPlans(plans) {
+  pricingGrid.innerHTML = '';
+  for (const p of plans) {
+    const card = document.createElement('div');
+    card.className = 'plan-card' + (p.key === currentPlan ? ' current' : '');
+
+    const name = document.createElement('div');
+    name.className = 'plan-name';
+    name.textContent = p.label;
+
+    const price = document.createElement('div');
+    price.className = 'plan-price';
+    price.innerHTML = p.priceUsd ? `$${p.priceUsd}<span>/mo</span>` : 'Free';
+
+    const blurb = document.createElement('div');
+    blurb.className = 'plan-blurb';
+    blurb.textContent = p.blurb || '';
+
+    const features = document.createElement('ul');
+    features.className = 'plan-features';
+    for (const f of p.features || []) {
+      const li = document.createElement('li');
+      li.textContent = f;
+      features.appendChild(li);
+    }
+
+    const action = document.createElement('div');
+    action.className = 'plan-action';
+    if (p.key === currentPlan) {
+      const tag = document.createElement('span');
+      tag.className = 'plan-current-tag';
+      tag.textContent = 'Current plan';
+      action.appendChild(tag);
+    } else if (p.priceUsd > 0) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn primary';
+      btn.textContent = `Upgrade to ${p.label}`;
+      btn.addEventListener('click', () => startCheckout(p.key, btn));
+      action.appendChild(btn);
+    }
+
+    card.append(name, price, blurb, features, action);
+    pricingGrid.appendChild(card);
+  }
+
+  // Subscribed users get a portal link to change or cancel their plan.
+  pricingActions.innerHTML = '';
+  if (currentPlan !== 'free') {
+    const manage = document.createElement('button');
+    manage.type = 'button';
+    manage.className = 'btn ghost';
+    manage.textContent = 'Manage billing';
+    manage.addEventListener('click', () => startPortal(manage));
+    pricingActions.appendChild(manage);
+  }
+}
+
+async function startCheckout(plan, btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Redirecting…';
+  try {
+    const res = await fetch('/api/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
+    window.location.href = data.url;
+  } catch (err) {
+    billingMsg.textContent = err.message;
+    billingMsg.classList.add('error');
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+async function startPortal(btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Opening…';
+  try {
+    const res = await fetch('/api/billing/portal', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Could not open billing portal.');
+    window.location.href = data.url;
+  } catch (err) {
+    billingMsg.textContent = err.message;
+    billingMsg.classList.add('error');
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+// After returning from Stripe Checkout, surface the result and re-sync the plan
+// (the webhook may land a beat after the redirect, so refresh again shortly).
+function handleBillingReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('upgraded') && !params.has('canceled')) return;
+  if (params.has('upgraded')) {
+    setStatus('Subscription active — thank you! Your plan is being updated.');
+    setTimeout(refreshSession, 2500);
+  } else {
+    setStatus('Checkout canceled — no changes were made.');
+  }
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 /* ── Boot ───────────────────────────────────────────────────── */
+handleBillingReturn();
 refreshSession();
