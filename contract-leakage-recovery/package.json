@@ -9,17 +9,24 @@
     "dev": "node server.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.45.2",
     "express": "^4.19.2",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
     "multer": "^2.1.1",
     "pdf-parse": "^1.1.1",
-    "pdfkit": "^0.19.1"
+    "pdfkit": "^0.19.1",
+    "pg": "^8.21.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.2"
+  }
 }

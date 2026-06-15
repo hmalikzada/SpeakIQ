@@ -13,7 +13,26 @@ const bulkSection = document.getElementById('bulk-section');
 const bulkAnalyzeBtn = document.getElementById('bulk-analyze-btn');
 const bulkResults = document.getElementById('bulk-results');
 
+// Auth + history elements
+const appMain = document.getElementById('app-main');
+const authScreen = document.getElementById('auth-screen');
+const authForm = document.getElementById('auth-form');
+const authEmail = document.getElementById('auth-email');
+const authPassword = document.getElementById('auth-password');
+const authSubmit = document.getElementById('auth-submit');
+const authError = document.getElementById('auth-error');
+const authTabs = document.querySelectorAll('.auth-tab');
+const userBar = document.getElementById('user-bar');
+const ubEmail = document.getElementById('ub-email');
+const ubUsage = document.getElementById('ub-usage');
+const historyBtn = document.getElementById('history-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const historyPanel = document.getElementById('history-panel');
+const historyClose = document.getElementById('history-close');
+const historyList = document.getElementById('history-list');
+
 let lastAnalysis = null;
+let authMode = 'login';
 
 const fmtUsd = (n) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
@@ -158,11 +177,16 @@ async function runAnalysis(url, options) {
     const res = await fetch(url, options);
     const data = await res.json();
 
+    if (res.status === 401) {
+      showAuth();
+      throw new Error('Your session expired. Please sign in again.');
+    }
     if (!res.ok) {
       throw new Error(data.error || `Request failed (${res.status})`);
     }
 
     renderResults(data);
+    if (data.usage) setUsage(data.usage);
     results.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     setStatus(err.message, true);
@@ -182,11 +206,16 @@ async function runBulkAnalysis(formData) {
     const res = await fetch('/api/analyze-bulk', { method: 'POST', body: formData });
     const data = await res.json();
 
+    if (res.status === 401) {
+      showAuth();
+      throw new Error('Your session expired. Please sign in again.');
+    }
     if (!res.ok) {
       throw new Error(data.error || `Request failed (${res.status})`);
     }
 
     renderBulkResults(data);
+    if (data.usage) setUsage(data.usage);
     bulkResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     setStatus(err.message, true);
@@ -698,3 +727,167 @@ async function downloadGroupReport(group, btn) {
     btn.textContent = original;
   }
 }
+
+/* ── Auth + session ─────────────────────────────────────────── */
+function showApp(user, usage) {
+  authScreen.classList.add('hidden');
+  appMain.classList.remove('hidden');
+  userBar.classList.remove('hidden');
+  ubEmail.textContent = user.email;
+  if (usage) setUsage(usage);
+}
+
+function showAuth() {
+  appMain.classList.add('hidden');
+  userBar.classList.add('hidden');
+  authScreen.classList.remove('hidden');
+  results.classList.add('hidden');
+  bulkResults.classList.add('hidden');
+  historyPanel.classList.add('hidden');
+}
+
+function setUsage(usage) {
+  const limit = usage.limit == null ? '∞' : usage.limit;
+  ubUsage.textContent = `${usage.used} / ${limit} audits · ${usage.planLabel}`;
+}
+
+async function refreshSession() {
+  try {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (data.user) showApp(data.user, data.usage);
+    else showAuth();
+  } catch {
+    showAuth();
+  }
+}
+
+authTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    authMode = tab.dataset.auth;
+    authTabs.forEach((t) => t.classList.toggle('active', t === tab));
+    authSubmit.textContent = authMode === 'register' ? 'Create account' : 'Sign in';
+    authPassword.autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
+    authError.textContent = '';
+  });
+});
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authError.textContent = '';
+  authSubmit.disabled = true;
+  const original = authSubmit.textContent;
+  authSubmit.textContent = 'Please wait…';
+
+  try {
+    const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: authEmail.value, password: authPassword.value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    authForm.reset();
+    showApp(data.user, data.usage);
+  } catch (err) {
+    authError.textContent = err.message;
+  } finally {
+    authSubmit.disabled = false;
+    authSubmit.textContent = original;
+  }
+});
+
+logoutBtn.addEventListener('click', async () => {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch {
+    /* ignore */
+  }
+  showAuth();
+});
+
+/* ── Audit history ──────────────────────────────────────────── */
+historyBtn.addEventListener('click', loadHistory);
+historyClose.addEventListener('click', () => historyPanel.classList.add('hidden'));
+
+async function loadHistory() {
+  historyList.innerHTML = '<li class="history-empty">Loading…</li>';
+  historyPanel.classList.remove('hidden');
+  historyPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const res = await fetch('/api/audits');
+    if (res.status === 401) {
+      showAuth();
+      return;
+    }
+    const { audits = [] } = await res.json();
+    renderHistory(audits);
+  } catch {
+    historyList.innerHTML = '<li class="history-empty">Could not load history.</li>';
+  }
+}
+
+function renderHistory(audits) {
+  historyList.innerHTML = '';
+  if (!audits.length) {
+    historyList.innerHTML = '<li class="history-empty">No audits yet. Run your first one below.</li>';
+    return;
+  }
+  for (const a of audits) {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const main = document.createElement('div');
+    const vendor = document.createElement('span');
+    vendor.className = 'history-vendor';
+    vendor.textContent = a.vendor || 'Untitled audit';
+    const meta = document.createElement('span');
+    meta.className = 'history-meta';
+    const date = new Date(a.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const mode = a.mode === 'bulk' ? 'Bulk' : 'Single';
+    meta.textContent = `${date} · ${mode} · ${a.findingCount} finding${a.findingCount === 1 ? '' : 's'}`;
+    main.append(vendor, meta);
+
+    const impact = document.createElement('span');
+    impact.className = 'history-impact';
+    impact.textContent = `${fmtUsd(a.annualImpact)}/yr`;
+
+    li.append(main, impact);
+    li.addEventListener('click', () => viewAudit(a.id));
+    historyList.appendChild(li);
+  }
+}
+
+async function viewAudit(id) {
+  try {
+    const res = await fetch(`/api/audits/${id}`);
+    if (res.status === 401) {
+      showAuth();
+      return;
+    }
+    if (!res.ok) throw new Error('Could not load that audit.');
+    const audit = await res.json();
+    historyPanel.classList.add('hidden');
+
+    if (audit.mode === 'bulk') {
+      results.classList.add('hidden');
+      renderBulkResults(audit.result);
+      bulkResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      bulkResults.classList.add('hidden');
+      renderResults(audit.result);
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } catch (err) {
+    setStatus(err.message, true);
+  }
+}
+
+/* ── Boot ───────────────────────────────────────────────────── */
+refreshSession();

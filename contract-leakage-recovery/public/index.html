@@ -11,6 +11,13 @@
 </head>
 <body>
   <div class="page">
+    <div id="user-bar" class="user-bar hidden">
+      <span class="ub-email" id="ub-email"></span>
+      <span class="ub-usage" id="ub-usage"></span>
+      <button type="button" id="history-btn" class="ub-btn">Audit history</button>
+      <button type="button" id="logout-btn" class="ub-btn">Sign out</button>
+    </div>
+
     <header class="hero">
       <div class="hero-top">
         <div class="brand">
@@ -26,7 +33,35 @@
       </p>
     </header>
 
-    <main>
+    <section id="auth-screen" class="auth-screen hidden">
+      <div class="auth-card">
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
+          <button type="button" class="auth-tab" data-auth="register">Create account</button>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <label class="auth-label" for="auth-email">Email
+            <input type="email" id="auth-email" autocomplete="email" required />
+          </label>
+          <label class="auth-label" for="auth-password">Password
+            <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required />
+          </label>
+          <button type="submit" id="auth-submit" class="btn primary">Sign in</button>
+          <p id="auth-error" class="auth-error" role="alert"></p>
+        </form>
+        <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
+      </div>
+    </section>
+
+    <main id="app-main" class="hidden">
+      <section id="history-panel" class="history-panel hidden">
+        <div class="history-head">
+          <h2>Audit history</h2>
+          <button type="button" id="history-close" class="ub-btn">Close</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+      </section>
+
       <div class="mode-toggle" role="tablist">
         <button type="button" class="mode-btn active" data-mode="guided">Guided upload</button>
         <button type="button" class="mode-btn" data-mode="bulk">Bulk upload</button>
