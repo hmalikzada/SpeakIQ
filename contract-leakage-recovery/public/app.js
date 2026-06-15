@@ -264,7 +264,7 @@ function renderResults(data) {
   const { findings, summary, executiveSummary, legal } = data;
 
   document.getElementById('exec-summary').textContent =
-    executiveSummary || 'Analysis complete — see the detailed findings below.';
+    executiveSummary || 'Analysis complete. See the detailed findings below.';
   document.getElementById('sum-monthly').textContent = fmtUsd(summary.totalMonthlyImpactUsd);
   document.getElementById('sum-annual').textContent = fmtUsd(summary.totalAnnualImpactUsd);
   document.getElementById('sum-fee').textContent = fmtUsd(summary.suggestedFeeUsd);
@@ -274,7 +274,7 @@ function renderResults(data) {
 
   if (findings.length === 0) {
     findingsList.innerHTML =
-      '<div class="empty-state">No discrepancies found — this contract and invoice set look clean.</div>';
+      '<div class="empty-state">No discrepancies found. This contract and invoice set looks clean.</div>';
   } else {
     const order = { critical: 0, moderate: 1, minor: 2 };
     const sorted = [...findings].sort(
@@ -504,7 +504,7 @@ function buildMemo(group) {
   head.append(stamp, h2, download);
 
   const p = document.createElement('p');
-  p.textContent = group.executiveSummary || 'Analysis complete — see the detailed findings below.';
+  p.textContent = group.executiveSummary || 'Analysis complete. See the detailed findings below.';
 
   memo.append(head, p);
   return memo;
@@ -549,7 +549,7 @@ function buildFindingsSection(findings) {
   const list = document.createElement('div');
   if (!findings || findings.length === 0) {
     list.innerHTML =
-      '<div class="empty-state">No discrepancies found — this contract and invoice set look clean.</div>';
+      '<div class="empty-state">No discrepancies found. This contract and invoice set looks clean.</div>';
   } else {
     list.style.display = 'flex';
     list.style.flexDirection = 'column';
