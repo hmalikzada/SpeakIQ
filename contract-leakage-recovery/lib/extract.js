@@ -82,3 +82,68 @@ export async function extractInvoice(text) {
     { role: 'user', content: text.slice(0, MAX_CHARS) },
   ]);
 }
+
+// A short excerpt is enough to spot a document's type and vendor name.
+const TRIAGE_EXCERPT_CHARS = 4000;
+
+const TRIAGE_SYSTEM_PROMPT = `You are a document-triage assistant for a vendor-contract audit tool.
+You will receive a JSON array of documents, each with an "index", "filename", and a (possibly
+truncated) text "excerpt". Classify each document as one of:
+  - "contract": a master service agreement / vendor contract that sets pricing and terms
+  - "amendment": an MOU, amendment, side letter, renewal notice, or other document that modifies a contract
+  - "invoice": a bill, invoice, or billing statement showing what was actually charged
+  - "unknown": cannot be confidently classified as any of the above
+
+For every document you classify as contract/amendment/invoice, also identify the vendor — the
+company being paid (not the customer receiving the goods or services).
+
+Then GROUP the documents into vendor relationships: documents about the same vendor belong in the
+same group, even if the vendor's name is written slightly differently across documents (e.g. "Acme
+Corp" vs "Acme Corporation, LLC" vs "ACME"). Each group should contain the contract(s)/amendment(s)
+and invoice(s) for one vendor. Documents classified "unknown", or that you cannot confidently assign
+to any vendor group, go in "unmatched" instead.
+
+Return a single JSON object with this shape:
+{
+  "groups": [
+    {
+      "vendor": "canonical vendor name for this group",
+      "contract_indices": [number, ...],
+      "amendment_indices": [number, ...],
+      "invoice_indices": [number, ...]
+    }
+  ],
+  "unmatched": [number, ...]
+}
+
+Use the document "index" values exactly as given. Every index must appear exactly once across all
+groups' arrays and "unmatched" combined.`;
+
+export async function classifyAndGroup(docs) {
+  const result = await chatJSON([
+    { role: 'system', content: TRIAGE_SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: JSON.stringify(
+        docs.map((d) => ({
+          index: d.index,
+          filename: d.filename,
+          excerpt: d.text.slice(0, TRIAGE_EXCERPT_CHARS),
+        }))
+      ),
+    },
+  ]);
+
+  const groups = Array.isArray(result.groups) ? result.groups : [];
+  const unmatched = Array.isArray(result.unmatched) ? result.unmatched : [];
+
+  return {
+    groups: groups.map((g) => ({
+      vendor: g.vendor || 'Unknown vendor',
+      contractIndices: Array.isArray(g.contract_indices) ? g.contract_indices : [],
+      amendmentIndices: Array.isArray(g.amendment_indices) ? g.amendment_indices : [],
+      invoiceIndices: Array.isArray(g.invoice_indices) ? g.invoice_indices : [],
+    })),
+    unmatched,
+  };
+}

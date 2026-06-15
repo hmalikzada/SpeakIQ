@@ -42,6 +42,19 @@ the invoices to check (PDF/.txt/.csv, up to 10). Amendment terms
 override the base contract during extraction. The analysis returns an
 executive-summary audit memo plus severity-ranked findings.
 
+### Bulk upload
+
+Switch to **"Bulk upload"** to drop a single pile of files — contracts,
+amendments, and invoices for one or more vendors — without sorting them
+into buckets first. GPT-4o triages each file (contract / amendment /
+invoice + vendor name), groups documents that belong to the same vendor
+even if the vendor's name is formatted slightly differently across
+documents, and runs the same audit per vendor group. Each vendor gets its
+own collapsible report card with its own PDF download. Any files that
+can't be confidently classified or grouped are listed separately and
+excluded from the audits (`/api/analyze-bulk`, `classifyAndGroup` in
+`lib/extract.js`).
+
 ## Notes on this prototype
 
 - Files are processed in memory and never written to disk.

@@ -24,6 +24,11 @@
     </header>
 
     <main>
+      <div class="mode-toggle" role="tablist">
+        <button type="button" class="mode-btn active" data-mode="guided">Guided upload</button>
+        <button type="button" class="mode-btn" data-mode="bulk">Bulk upload</button>
+      </div>
+
       <form id="analyze-form" class="workflow">
         <div class="steps">
           <section class="step">
@@ -79,8 +84,30 @@
           <button type="submit" id="analyze-btn" class="btn primary">Run expert analysis</button>
           <button type="button" id="sample-btn" class="btn ghost">Try sample data</button>
         </div>
-        <p id="status-msg" class="status-msg" role="status"></p>
       </form>
+
+      <div id="bulk-section" class="workflow hidden">
+        <section class="step bulk-step">
+          <div class="step-head">
+            <div>
+              <h2>Drop everything here</h2>
+              <p>Contracts, amendments, and invoices — for one or more vendors. We'll sort and pair them up automatically.</p>
+            </div>
+          </div>
+          <div class="dropzone" id="dz-bulk" data-kind="bulk">
+            <input type="file" id="bulk-files" accept=".pdf,.txt,.csv" multiple hidden />
+            <div class="dz-icon">📚</div>
+            <div class="dz-label">Drop files here<br /><span>up to 30 files — PDF, .txt, or .csv</span></div>
+          </div>
+          <ul class="file-list" id="list-bulk"></ul>
+        </section>
+
+        <div class="actions">
+          <button type="button" id="bulk-analyze-btn" class="btn primary">Sort &amp; analyze</button>
+        </div>
+      </div>
+
+      <p id="status-msg" class="status-msg" role="status"></p>
 
       <div id="loading" class="loading hidden">
         <div class="loading-spinner"></div>
@@ -158,6 +185,8 @@
           finding against the source documents and consult licensed counsel before acting.
         </p>
       </section>
+
+      <section id="bulk-results" class="results hidden"></section>
     </main>
 
     <footer class="footer">ClauseGuard · AI contract-compliance auditing</footer>

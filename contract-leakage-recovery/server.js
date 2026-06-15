@@ -22,7 +22,7 @@ import { dirname, join } from 'path';
 import { readFile } from 'fs/promises';
 
 import { hasApiKey } from './lib/openai.js';
-import { fileToText, extractContractTerms, extractInvoice } from './lib/extract.js';
+import { fileToText, extractContractTerms, extractInvoice, classifyAndGroup } from './lib/extract.js';
 import { findDiscrepancies, legalAdvisory, summarize } from './lib/matcher.js';
 import { buildReportPdf } from './lib/report.js';
 
@@ -128,6 +128,93 @@ app.post('/api/analyze-sample', async (req, res) => {
     res.json({ contract, invoices, findings, executiveSummary, legal, summary });
   } catch (e) {
     console.error('/api/analyze-sample error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── /api/analyze-bulk — auto-sort a pile of files by vendor, then audit each ──
+app.post('/api/analyze-bulk', upload.array('files', 30), async (req, res) => {
+  if (!hasApiKey()) {
+    return res.status(503).json({ error: 'Server has no OpenAI key configured.' });
+  }
+
+  try {
+    const files = req.files || [];
+    if (files.length < 2) {
+      return res
+        .status(400)
+        .json({ error: 'Please upload at least one contract and one invoice.' });
+    }
+
+    const docs = await Promise.all(
+      files.map(async (file, index) => ({
+        index,
+        filename: file.originalname,
+        text: await fileToText(file),
+      }))
+    );
+
+    const { groups, unmatched } = await classifyAndGroup(docs);
+
+    const results = await Promise.all(
+      groups.map(async (group) => {
+        const contractDocs = group.contractIndices.map((i) => docs[i]).filter(Boolean);
+        const amendmentDocs = group.amendmentIndices.map((i) => docs[i]).filter(Boolean);
+        const invoiceDocs = group.invoiceIndices.map((i) => docs[i]).filter(Boolean);
+
+        const fileNames = {
+          contracts: contractDocs.map((d) => d.filename),
+          amendments: amendmentDocs.map((d) => d.filename),
+          invoices: invoiceDocs.map((d) => d.filename),
+        };
+
+        if (contractDocs.length === 0 || invoiceDocs.length === 0) {
+          return {
+            vendor: group.vendor,
+            files: fileNames,
+            incomplete: true,
+            reason:
+              contractDocs.length === 0
+                ? 'No contract was found for these invoices — upload the contract to run a full audit.'
+                : 'No invoices were found for this contract — upload invoices to run a full audit.',
+          };
+        }
+
+        let contractText = contractDocs.map((d) => d.text).join('\n\n');
+        for (const doc of amendmentDocs) {
+          contractText += `\n\n===== SUPPORTING DOCUMENT: ${doc.filename} =====\n\n${doc.text}`;
+        }
+        const contract = await extractContractTerms(contractText);
+
+        const invoices = [];
+        for (const doc of invoiceDocs) {
+          invoices.push(await extractInvoice(doc.text));
+        }
+
+        const [{ executiveSummary, findings }, legal] = await Promise.all([
+          findDiscrepancies(contract, invoices),
+          legalAdvisory(contract, invoices),
+        ]);
+        const summary = summarize(findings);
+
+        return {
+          vendor: group.vendor,
+          files: fileNames,
+          contract,
+          invoices,
+          findings,
+          executiveSummary,
+          legal,
+          summary,
+        };
+      })
+    );
+
+    const unmatchedFiles = unmatched.map((i) => docs[i]?.filename).filter(Boolean);
+
+    res.json({ results, unmatchedFiles });
+  } catch (e) {
+    console.error('/api/analyze-bulk error:', e);
     res.status(500).json({ error: e.message });
   }
 });
