@@ -294,10 +294,10 @@ function renderResults(data) {
 
   document.getElementById('exec-summary').textContent =
     executiveSummary || 'Analysis complete. See the detailed findings below.';
-  document.getElementById('sum-monthly').textContent = fmtUsd(summary.totalMonthlyImpactUsd);
-  document.getElementById('sum-annual').textContent = fmtUsd(summary.totalAnnualImpactUsd);
-  document.getElementById('sum-fee').textContent = fmtUsd(summary.suggestedFeeUsd);
-  document.getElementById('sum-count').textContent = summary.findingCount;
+  animateValue(document.getElementById('sum-monthly'), summary.totalMonthlyImpactUsd, fmtUsd);
+  animateValue(document.getElementById('sum-annual'), summary.totalAnnualImpactUsd, fmtUsd);
+  animateValue(document.getElementById('sum-fee'), summary.suggestedFeeUsd, fmtUsd);
+  animateValue(document.getElementById('sum-count'), summary.findingCount, (n) => String(Math.round(n)));
 
   findingsList.innerHTML = '';
 
@@ -421,6 +421,27 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = String(str);
   return div.innerHTML;
+}
+
+// Count a number up to its target on reveal (respects reduced-motion).
+function animateValue(el, target, formatter) {
+  if (!el) return;
+  target = Number(target) || 0;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || target === 0) {
+    el.textContent = formatter(target);
+    return;
+  }
+  const duration = 900;
+  const start = performance.now();
+  function frame(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = formatter(target * eased);
+    if (t < 1) requestAnimationFrame(frame);
+    else el.textContent = formatter(target);
+  }
+  requestAnimationFrame(frame);
 }
 
 /* ── Bulk results ───────────────────────────────────────────── */
