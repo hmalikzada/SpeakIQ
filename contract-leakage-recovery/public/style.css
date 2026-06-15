@@ -1207,6 +1207,17 @@ body::after {
   text-align: center;
 }
 
+.opt-tag {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.13);
+  border-radius: 999px;
+  padding: 2px 7px;
+  margin-left: 6px;
+}
+
 /* ── Audit history ───────────────────────────────────────────── */
 .history-panel {
   padding: 22px 26px 26px;

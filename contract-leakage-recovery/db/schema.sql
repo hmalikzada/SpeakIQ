@@ -4,9 +4,15 @@ CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  name          TEXT,
+  company       TEXT,
   plan          TEXT NOT NULL DEFAULT 'free',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Add profile columns to databases created before they existed.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS company TEXT;
 
 CREATE TABLE IF NOT EXISTS sessions (
   id          TEXT PRIMARY KEY,        -- sha256 hash of the cookie token

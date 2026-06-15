@@ -40,6 +40,12 @@
           <button type="button" class="auth-tab" data-auth="register">Create account</button>
         </div>
         <form id="auth-form" class="auth-form">
+          <label class="auth-label reg-only hidden" for="auth-name">Full name
+            <input type="text" id="auth-name" autocomplete="name" disabled />
+          </label>
+          <label class="auth-label reg-only hidden" for="auth-company">Company <span class="opt-tag">optional</span>
+            <input type="text" id="auth-company" autocomplete="organization" disabled />
+          </label>
           <label class="auth-label" for="auth-email">Email
             <input type="email" id="auth-email" autocomplete="email" required />
           </label>

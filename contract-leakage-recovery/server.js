@@ -116,16 +116,19 @@ app.get('/api/status', (req, res) => {
 // ── Auth ──────────────────────────────────────────────────────
 app.post('/api/auth/register', requireDb, sameOrigin, async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { email, password, name, company } = req.body || {};
     if (!validEmail(email) || !validPassword(password)) {
       return res
         .status(400)
         .json({ error: 'Enter a valid email and a password of at least 8 characters.' });
     }
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'Please enter your name.' });
+    }
     if (await findUserByEmail(email)) {
       return res.status(409).json({ error: 'An account with that email already exists.' });
     }
-    const user = await createUser(email, password);
+    const user = await createUser({ email, password, name, company });
     await startSession(res, user.id);
     res.json({ user: publicUser(user), usage: await usageFor(user) });
   } catch (e) {
@@ -416,7 +419,7 @@ app.post('/api/report', requireAuth, sameOrigin, (req, res) => {
 
 // ── Helpers ───────────────────────────────────────────────────
 function publicUser(u) {
-  return { id: u.id, email: u.email, plan: u.plan };
+  return { id: u.id, email: u.email, name: u.name, company: u.company, plan: u.plan };
 }
 
 async function usageFor(user) {

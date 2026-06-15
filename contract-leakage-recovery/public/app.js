@@ -17,6 +17,9 @@ const bulkResults = document.getElementById('bulk-results');
 const appMain = document.getElementById('app-main');
 const authScreen = document.getElementById('auth-screen');
 const authForm = document.getElementById('auth-form');
+const authName = document.getElementById('auth-name');
+const authCompany = document.getElementById('auth-company');
+const regOnlyFields = document.querySelectorAll('.reg-only');
 const authEmail = document.getElementById('auth-email');
 const authPassword = document.getElementById('auth-password');
 const authSubmit = document.getElementById('auth-submit');
@@ -754,7 +757,7 @@ function showApp(user, usage) {
   authScreen.classList.add('hidden');
   appMain.classList.remove('hidden');
   userBar.classList.remove('hidden');
-  ubEmail.textContent = user.email;
+  ubEmail.textContent = user.name ? `${user.name} · ${user.email}` : user.email;
   if (usage) setUsage(usage);
 }
 
@@ -787,11 +790,23 @@ authTabs.forEach((tab) => {
   tab.addEventListener('click', () => {
     authMode = tab.dataset.auth;
     authTabs.forEach((t) => t.classList.toggle('active', t === tab));
-    authSubmit.textContent = authMode === 'register' ? 'Create account' : 'Sign in';
-    authPassword.autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
-    authError.textContent = '';
+    setAuthMode(authMode);
   });
 });
+
+// Show the name/company fields only when registering. Hidden required fields
+// block form submission, so we disable (not just hide) the register-only
+// inputs in sign-in mode.
+function setAuthMode(mode) {
+  const isRegister = mode === 'register';
+  regOnlyFields.forEach((el) => el.classList.toggle('hidden', !isRegister));
+  authName.disabled = !isRegister;
+  authCompany.disabled = !isRegister;
+  authName.required = isRegister;
+  authSubmit.textContent = isRegister ? 'Create account' : 'Sign in';
+  authPassword.autocomplete = isRegister ? 'new-password' : 'current-password';
+  authError.textContent = '';
+}
 
 authForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -802,10 +817,15 @@ authForm.addEventListener('submit', async (e) => {
 
   try {
     const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const payload = { email: authEmail.value, password: authPassword.value };
+    if (authMode === 'register') {
+      payload.name = authName.value;
+      payload.company = authCompany.value;
+    }
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: authEmail.value, password: authPassword.value }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Something went wrong.');

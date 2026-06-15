@@ -16,11 +16,17 @@ export async function hashPassword(pw) {
   return bcrypt.hash(pw, 12);
 }
 
-export async function createUser(email, password) {
+export async function createUser({ email, password, name, company }) {
   const passwordHash = await hashPassword(password);
   const [user] = await db
     .insert(schema.users)
-    .values({ id: randomUUID(), email: normalizeEmail(email), passwordHash })
+    .values({
+      id: randomUUID(),
+      email: normalizeEmail(email),
+      passwordHash,
+      name: name?.trim() || null,
+      company: company?.trim() || null,
+    })
     .returning();
   return user;
 }
