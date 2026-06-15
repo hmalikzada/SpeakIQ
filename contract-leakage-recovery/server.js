@@ -1,5 +1,5 @@
 /**
- * Contract Leakage Recovery — prototype server
+ * ClauseGuard — prototype server
  *
  * Upload a vendor contract plus one or more invoices from that vendor.
  * The server extracts structured terms/line-items with GPT-4o, then
@@ -155,6 +155,6 @@ app.post('/api/report', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n✅  Contract Leakage Recovery running at http://localhost:${PORT}`);
+  console.log(`\n✅  ClauseGuard running at http://localhost:${PORT}`);
   console.log(`   OpenAI key: ${hasApiKey() ? '✓ loaded from .env' : '✗ NOT SET — add OPENAI_API_KEY to .env'}\n`);
 });
