@@ -14,7 +14,10 @@ particle_*.png
 Thumbs.db
 desktop.ini
 .vscode/
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/**
 
 # ── Secrets ───────────────────────────────────────────────────
 .env
