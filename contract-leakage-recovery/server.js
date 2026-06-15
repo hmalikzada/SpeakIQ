@@ -24,6 +24,7 @@ import { readFile } from 'fs/promises';
 import { hasApiKey } from './lib/openai.js';
 import { fileToText, extractContractTerms, extractInvoice } from './lib/extract.js';
 import { findDiscrepancies, legalAdvisory, summarize } from './lib/matcher.js';
+import { buildReportPdf } from './lib/report.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,6 +37,7 @@ if (!hasApiKey()) {
 }
 
 app.use(cors());
+app.use(express.json({ limit: '2mb' }));
 app.use(express.static(join(__dirname, 'public')));
 app.use('/samples', express.static(join(__dirname, 'samples')));
 
@@ -126,6 +128,28 @@ app.post('/api/analyze-sample', async (req, res) => {
     res.json({ contract, invoices, findings, executiveSummary, legal, summary });
   } catch (e) {
     console.error('/api/analyze-sample error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── /api/report — render an analysis result as a PDF audit report ──
+app.post('/api/report', (req, res) => {
+  try {
+    const { contract, findings, executiveSummary, legal, summary } = req.body || {};
+    if (!summary) {
+      return res.status(400).json({ error: 'Missing analysis result.' });
+    }
+
+    const doc = buildReportPdf({ contract, findings, executiveSummary, legal, summary });
+
+    const vendor = (contract?.vendor || 'vendor').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="leakaudit-${vendor}.pdf"`);
+
+    doc.pipe(res);
+    doc.end();
+  } catch (e) {
+    console.error('/api/report error:', e);
     res.status(500).json({ error: e.message });
   }
 });

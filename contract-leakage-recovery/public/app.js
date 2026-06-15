@@ -6,6 +6,9 @@ const loading = document.getElementById('loading');
 const loadingStep = document.getElementById('loading-step');
 const results = document.getElementById('results');
 const findingsList = document.getElementById('findings-list');
+const downloadBtn = document.getElementById('download-pdf-btn');
+
+let lastAnalysis = null;
 
 const fmtUsd = (n) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
@@ -154,7 +157,44 @@ function setStatus(msg, isError = false) {
 }
 
 /* ── Rendering ──────────────────────────────────────────────── */
+downloadBtn.addEventListener('click', async () => {
+  if (!lastAnalysis) return;
+
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = 'Generating…';
+
+  try {
+    const res = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lastAnalysis),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const vendor = (lastAnalysis.contract?.vendor || 'vendor').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    a.download = `leakaudit-${vendor}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    setStatus(err.message, true);
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = 'Download PDF report';
+  }
+});
+
 function renderResults(data) {
+  lastAnalysis = data;
   const { findings, summary, executiveSummary, legal } = data;
 
   document.getElementById('exec-summary').textContent =

@@ -14,7 +14,8 @@
     "express": "^4.19.2",
     "multer": "^2.1.1",
     "node-fetch": "^3.3.2",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.19.1"
   },
   "engines": {
     "node": ">=18.0.0"
