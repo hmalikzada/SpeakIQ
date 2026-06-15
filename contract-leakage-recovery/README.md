@@ -1,4 +1,4 @@
-# Contract Leakage Recovery
+# ClauseGuard
 
 AI auditor that cross-references a vendor contract against that vendor's
 invoices and flags every place money is leaking: overcharges, escalator

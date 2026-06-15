@@ -34,7 +34,7 @@ export function buildReportPdf({ contract, findings, executiveSummary, legal, su
     .font('Helvetica-Bold')
     .fontSize(20)
     .fillColor(GREEN)
-    .text('LeakAudit', { continued: false });
+    .text('ClauseGuard', { continued: false });
 
   doc
     .font('Helvetica-Bold')

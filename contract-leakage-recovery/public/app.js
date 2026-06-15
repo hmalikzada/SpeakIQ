@@ -180,7 +180,7 @@ downloadBtn.addEventListener('click', async () => {
     const a = document.createElement('a');
     a.href = url;
     const vendor = (lastAnalysis.contract?.vendor || 'vendor').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-    a.download = `leakaudit-${vendor}.pdf`;
+    a.download = `clauseguard-${vendor}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();

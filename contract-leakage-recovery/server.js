@@ -144,7 +144,7 @@ app.post('/api/report', (req, res) => {
 
     const vendor = (contract?.vendor || 'vendor').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="leakaudit-${vendor}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="clauseguard-${vendor}.pdf"`);
 
     doc.pipe(res);
     doc.end();
