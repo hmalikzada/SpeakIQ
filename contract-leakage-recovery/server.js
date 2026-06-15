@@ -16,7 +16,10 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import multer from 'multer';
+import { timingSafeEqual } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFile } from 'fs/promises';
@@ -36,7 +39,36 @@ if (!hasApiKey()) {
   console.error('\n⚠️  OPENAI_API_KEY is not set in .env — analysis will not work.\n');
 }
 
-app.use(cors());
+// Security headers. CSP allows the Google Fonts the UI loads and the inline
+// SVG data-URI used as the desk-texture background.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+      },
+    },
+  })
+);
+
+// CORS: locked to an allowlist when ALLOWED_ORIGINS is set; otherwise no
+// cross-origin headers are sent (the same-origin UI keeps working regardless).
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
+
+// Optional HTTP Basic Auth gate. When BASIC_AUTH_USER/PASS are set, the whole
+// app sits behind a browser login — a zero-frontend-change stopgap until real
+// accounts land. Left open when the vars are unset.
+app.use(basicAuth);
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(join(__dirname, 'public')));
 app.use('/samples', express.static(join(__dirname, 'samples')));
@@ -44,6 +76,15 @@ app.use('/samples', express.static(join(__dirname, 'samples')));
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB per file
+});
+
+// Caps OpenAI-backed spend: per-IP limit on the expensive analysis endpoints.
+const analyzeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: Number(process.env.ANALYZE_RATE_LIMIT) || 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many analysis requests. Please try again later.' },
 });
 
 // ── /api/status ───────────────────────────────────────────────
@@ -54,6 +95,7 @@ app.get('/api/status', (req, res) => {
 // ── /api/analyze — extract + cross-reference contract vs invoices ──
 app.post(
   '/api/analyze',
+  analyzeLimiter,
   upload.fields([
     { name: 'contract', maxCount: 1 },
     { name: 'supporting', maxCount: 10 },
@@ -98,13 +140,13 @@ app.post(
       res.json({ contract, invoices, findings, executiveSummary, legal, summary });
     } catch (e) {
       console.error('/api/analyze error:', e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: 'Something went wrong while processing your request. Please try again.' });
     }
   }
 );
 
 // ── /api/analyze-sample — run the bundled demo contract + invoice ──
-app.post('/api/analyze-sample', async (req, res) => {
+app.post('/api/analyze-sample', analyzeLimiter, async (req, res) => {
   if (!hasApiKey()) {
     return res.status(503).json({ error: 'Server has no OpenAI key configured.' });
   }
@@ -128,12 +170,12 @@ app.post('/api/analyze-sample', async (req, res) => {
     res.json({ contract, invoices, findings, executiveSummary, legal, summary });
   } catch (e) {
     console.error('/api/analyze-sample error:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Something went wrong while processing your request. Please try again.' });
   }
 });
 
 // ── /api/analyze-bulk — auto-sort a pile of files by vendor, then audit each ──
-app.post('/api/analyze-bulk', upload.array('files', 30), async (req, res) => {
+app.post('/api/analyze-bulk', analyzeLimiter, upload.array('files', 30), async (req, res) => {
   if (!hasApiKey()) {
     return res.status(503).json({ error: 'Server has no OpenAI key configured.' });
   }
@@ -215,7 +257,7 @@ app.post('/api/analyze-bulk', upload.array('files', 30), async (req, res) => {
     res.json({ results, unmatchedFiles });
   } catch (e) {
     console.error('/api/analyze-bulk error:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Something went wrong while processing your request. Please try again.' });
   }
 });
 
@@ -237,11 +279,41 @@ app.post('/api/report', (req, res) => {
     doc.end();
   } catch (e) {
     console.error('/api/report error:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Something went wrong while processing your request. Please try again.' });
   }
 });
 
+// ── Optional Basic Auth middleware ────────────────────────────
+const BASIC_USER = process.env.BASIC_AUTH_USER;
+const BASIC_PASS = process.env.BASIC_AUTH_PASS;
+
+function basicAuth(req, res, next) {
+  if (!BASIC_USER || !BASIC_PASS) return next(); // gating disabled
+
+  const header = req.get('authorization') || '';
+  const [scheme, encoded] = header.split(' ');
+  if (scheme === 'Basic' && encoded) {
+    const [user = '', pass = ''] = Buffer.from(encoded, 'base64').toString().split(':');
+    if (safeEqual(user, BASIC_USER) && safeEqual(pass, BASIC_PASS)) {
+      return next();
+    }
+  }
+
+  res.set('WWW-Authenticate', 'Basic realm="ClauseGuard"');
+  return res.status(401).send('Authentication required.');
+}
+
+// Constant-time string compare to avoid leaking match length via timing.
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 app.listen(PORT, () => {
   console.log(`\n✅  ClauseGuard running at http://localhost:${PORT}`);
-  console.log(`   OpenAI key: ${hasApiKey() ? '✓ loaded from .env' : '✗ NOT SET — add OPENAI_API_KEY to .env'}\n`);
+  console.log(`   OpenAI key: ${hasApiKey() ? '✓ loaded from .env' : '✗ NOT SET — add OPENAI_API_KEY to .env'}`);
+  console.log(`   Auth gate:  ${BASIC_USER && BASIC_PASS ? '✓ Basic Auth enabled' : '✗ open (set BASIC_AUTH_USER/PASS to lock down)'}`);
+  console.log(`   Rate limit: ${Number(process.env.ANALYZE_RATE_LIMIT) || 20} analyses / IP / hour\n`);
 });
