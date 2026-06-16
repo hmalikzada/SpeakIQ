@@ -815,6 +815,87 @@ function setUsage(usage) {
   ubUsage.textContent = `${usage.used} / ${limit} audits · ${usage.planLabel}`;
 }
 
+function renderDashboard() {
+  if (!cachedUser) return;
+  const name = cachedUser.name ? cachedUser.name.split(' ')[0] : 'there';
+  dashboardWelcome.textContent = `Welcome back, ${name}`;
+  if (cachedUsage) {
+    const limit = cachedUsage.limit == null ? '∞' : cachedUsage.limit;
+    dashboardSub.textContent = `${cachedUsage.used} of ${limit} audits used · ${cachedUsage.planLabel} plan`;
+  }
+  loadDashboardData();
+}
+
+async function loadDashboardData() {
+  statsRow.innerHTML = '';
+  recentAudits.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+
+  try {
+    const res = await fetch('/api/audits');
+    if (res.status === 401) {
+      showAuth();
+      return;
+    }
+    const { audits = [] } = await res.json();
+
+    const totalAnnual = audits.reduce((sum, a) => sum + (a.annualImpact || 0), 0);
+    const planLabel = cachedUsage?.planLabel || 'Free';
+
+    statsRow.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Audits</div>
+        <div class="stat-value">${audits.length}</div>
+      </div>
+      <div class="stat-card green-accent">
+        <div class="stat-label">Total Recoverable</div>
+        <div class="stat-value">${fmtUsd(totalAnnual)}/yr</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Current Plan</div>
+        <div class="stat-value" style="font-size:20px">${planLabel}</div>
+      </div>
+    `;
+
+    if (audits.length === 0) {
+      recentAudits.innerHTML = `
+        <div class="empty-state">
+          <p>No audits yet — run your first one.</p>
+          <button type="button" class="btn primary" onclick="showView('new-audit')">+ New audit</button>
+        </div>
+      `;
+      return;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'audit-cards';
+    for (const a of audits.slice(0, 8)) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'audit-card';
+      const date = new Date(a.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+      });
+      const mode = a.mode === 'bulk' ? 'Bulk' : 'Single';
+      card.innerHTML = `
+        <div class="audit-card-main">
+          <span class="audit-card-vendor">${escapeHtml(a.vendor || 'Untitled audit')}</span>
+          <span class="audit-card-meta">${date} · ${mode} · ${a.findingCount} finding${a.findingCount === 1 ? '' : 's'}</span>
+        </div>
+        <div class="audit-card-right">
+          <span class="audit-card-impact">${fmtUsd(a.annualImpact)}/yr</span>
+          <span class="audit-card-findings">${a.findingCount} finding${a.findingCount === 1 ? '' : 's'}</span>
+        </div>
+      `;
+      card.addEventListener('click', () => viewAudit(a.id));
+      container.appendChild(card);
+    }
+    recentAudits.innerHTML = '';
+    recentAudits.appendChild(container);
+  } catch {
+    recentAudits.innerHTML = '<div class="empty-state"><p>Could not load audits.</p></div>';
+  }
+}
+
 async function refreshSession() {
   try {
     const res = await fetch('/api/me');
