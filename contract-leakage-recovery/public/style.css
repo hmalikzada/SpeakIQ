@@ -1444,6 +1444,7 @@ body::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   background:
     radial-gradient(55% 80% at 5% 50%, rgba(22,163,74,0.18), transparent 60%),
     radial-gradient(35% 55% at 85% 20%, rgba(34,197,94,0.08), transparent 60%);
