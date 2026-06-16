@@ -16,12 +16,16 @@
   --green-hover:   #15803d;
   --green-tint:    rgba(34,197,94,0.08);
   --green-border:  rgba(34,197,94,0.20);
+  --green-glow-sm: 0 0 16px rgba(34,197,94,0.30);
+  --green-glow-md: 0 0 28px rgba(34,197,94,0.18);
+  --green-glow-lg: 0 0 48px rgba(34,197,94,0.12);
 
   --text:          #e5e7eb;
   --text-dim:      #9ca3af;
   --text-faint:    #4b5563;
 
   --danger:        #fb7185;
+  --danger-glow:   0 0 12px rgba(251,113,133,0.35);
   --amber:         #fbbf24;
   --border:        rgba(255,255,255,0.07);
   --border-strong: rgba(255,255,255,0.12);
@@ -323,7 +327,7 @@ body::before {
 
 .sidebar-footer {
   padding: 16px 16px 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-strong);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -460,13 +464,13 @@ body::before {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
-  box-shadow: var(--shadow-sm), 0 0 24px rgba(34,197,94,0.05);
+  box-shadow: var(--shadow-sm), 0 0 24px rgba(34,197,94,0.06);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .stat-card:hover {
   border-color: var(--green-border);
-  box-shadow: var(--shadow-md), 0 0 28px rgba(34,197,94,0.12);
+  box-shadow: var(--shadow-md), var(--green-glow-md);
 }
 
 .stat-card .stat-label {
@@ -679,13 +683,13 @@ body::before {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-sm), 0 0 24px rgba(34,197,94,0.05);
+  box-shadow: var(--shadow-sm), 0 0 24px rgba(34,197,94,0.06);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .step:hover {
   border-color: var(--green-border);
-  box-shadow: var(--shadow-md), 0 0 28px rgba(34,197,94,0.12);
+  box-shadow: var(--shadow-md), var(--green-glow-md);
 }
 
 .step-head {
@@ -708,7 +712,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 14px rgba(22,163,74,0.5);
+  box-shadow: var(--green-glow-sm);
 }
 
 .step-head h2 {
@@ -746,14 +750,14 @@ body::before {
   padding: 24px 16px;
   text-align: center;
   cursor: pointer;
-  background: rgba(255,255,255,0.02);
+  background: var(--bg-card);
   transition: all 0.18s ease;
 }
 
 .dropzone:hover,
 .dropzone.dragover {
-  border-color: var(--green);
-  background: rgba(34,197,94,0.05);
+  border-color: var(--green-border);
+  background: rgba(34,197,94,0.04);
 }
 
 .dz-icon { font-size: 26px; margin-bottom: 8px; }
@@ -1134,7 +1138,7 @@ body::before {
   letter-spacing: 0.05em;
   padding: 5px 13px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: var(--bg-card);
   border: 1px solid var(--border-strong);
   color: var(--text-faint);
   white-space: nowrap;
