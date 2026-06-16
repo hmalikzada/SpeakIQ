@@ -13,8 +13,8 @@ const bulkSection = document.getElementById('bulk-section');
 const bulkAnalyzeBtn = document.getElementById('bulk-analyze-btn');
 const bulkResults = document.getElementById('bulk-results');
 
-// Auth + history elements
-const appMain = document.getElementById('app-main');
+// Auth elements
+const appShell = document.getElementById('app-shell');
 const authScreen = document.getElementById('auth-screen');
 const authForm = document.getElementById('auth-form');
 const authName = document.getElementById('auth-name');
@@ -25,18 +25,24 @@ const authPassword = document.getElementById('auth-password');
 const authSubmit = document.getElementById('auth-submit');
 const authError = document.getElementById('auth-error');
 const authTabs = document.querySelectorAll('.auth-tab');
-const userBar = document.getElementById('user-bar');
 const ubEmail = document.getElementById('ub-email');
 const ubUsage = document.getElementById('ub-usage');
-const historyBtn = document.getElementById('history-btn');
 const logoutBtn = document.getElementById('logout-btn');
-const historyPanel = document.getElementById('history-panel');
-const historyClose = document.getElementById('history-close');
-const historyList = document.getElementById('history-list');
 
-const plansBtn = document.getElementById('plans-btn');
-const pricingPanel = document.getElementById('pricing-panel');
-const pricingClose = document.getElementById('pricing-close');
+// Sidebar nav
+const navItems = document.querySelectorAll('.nav-item');
+const newAuditCta = document.getElementById('new-audit-cta');
+const runAnotherBtn = document.getElementById('run-another-btn');
+const billingNavItem = document.getElementById('billing-nav-item');
+
+// Dashboard
+const statsRow = document.getElementById('stats-row');
+const recentAudits = document.getElementById('recent-audits');
+const dashboardWelcome = document.getElementById('dashboard-welcome');
+const dashboardSub = document.getElementById('dashboard-sub');
+
+// History / billing (IDs unchanged — same elements, now inside view panels)
+const historyList = document.getElementById('history-list');
 const pricingGrid = document.getElementById('pricing-grid');
 const pricingActions = document.getElementById('pricing-actions');
 const billingMsg = document.getElementById('billing-msg');
@@ -45,6 +51,25 @@ let lastAnalysis = null;
 let authMode = 'login';
 let currentPlan = 'free';
 let billingEnabled = false;
+let cachedUser = null;
+let cachedUsage = null;
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
+  const target = document.getElementById(`view-${name}`);
+  if (target) target.classList.remove('hidden');
+  navItems.forEach((item) => item.classList.toggle('active', item.dataset.view === name));
+  if (name === 'history') loadHistory();
+  if (name === 'billing') openPlans();
+  if (name === 'dashboard') renderDashboard();
+}
+
+navItems.forEach((item) => {
+  item.addEventListener('click', () => showView(item.dataset.view));
+});
+
+newAuditCta.addEventListener('click', () => showView('new-audit'));
+runAnotherBtn.addEventListener('click', () => showView('new-audit'));
 
 const fmtUsd = (n) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
@@ -763,26 +788,26 @@ async function downloadGroupReport(group, btn) {
 
 /* ── Auth + session ─────────────────────────────────────────── */
 function showApp(user, usage) {
+  cachedUser = user;
+  cachedUsage = usage;
   document.body.classList.remove('logged-out');
   authScreen.classList.add('hidden');
-  appMain.classList.remove('hidden');
-  userBar.classList.remove('hidden');
+  appShell.classList.remove('hidden');
   ubEmail.textContent = user.name ? `${user.name} · ${user.email}` : user.email;
   if (usage) {
     setUsage(usage);
     currentPlan = usage.plan;
   }
-  plansBtn.classList.toggle('hidden', !billingEnabled);
+  billingNavItem.classList.toggle('hidden', !billingEnabled);
+  showView('dashboard');
 }
 
 function showAuth() {
   document.body.classList.add('logged-out');
-  appMain.classList.add('hidden');
-  userBar.classList.add('hidden');
+  appShell.classList.add('hidden');
   authScreen.classList.remove('hidden');
   results.classList.add('hidden');
   bulkResults.classList.add('hidden');
-  historyPanel.classList.add('hidden');
 }
 
 function setUsage(usage) {
@@ -865,13 +890,8 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 /* ── Audit history ──────────────────────────────────────────── */
-historyBtn.addEventListener('click', loadHistory);
-historyClose.addEventListener('click', () => historyPanel.classList.add('hidden'));
-
 async function loadHistory() {
   historyList.innerHTML = '<li class="history-empty">Loading…</li>';
-  historyPanel.classList.remove('hidden');
-  historyPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   try {
     const res = await fetch('/api/audits');
@@ -930,7 +950,6 @@ async function viewAudit(id) {
     }
     if (!res.ok) throw new Error('Could not load that audit.');
     const audit = await res.json();
-    historyPanel.classList.add('hidden');
 
     if (audit.mode === 'bulk') {
       results.classList.add('hidden');
@@ -947,15 +966,10 @@ async function viewAudit(id) {
 }
 
 /* ── Plans & billing ────────────────────────────────────────── */
-plansBtn.addEventListener('click', openPlans);
-pricingClose.addEventListener('click', () => pricingPanel.classList.add('hidden'));
-
 async function openPlans() {
   billingMsg.textContent = '';
   pricingGrid.innerHTML = '<p class="history-empty">Loading…</p>';
   pricingActions.innerHTML = '';
-  pricingPanel.classList.remove('hidden');
-  pricingPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   try {
     const res = await fetch('/api/plans');
