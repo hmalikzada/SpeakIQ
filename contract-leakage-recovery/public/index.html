@@ -10,245 +10,269 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="logged-out">
-  <div class="page">
-    <div id="user-bar" class="user-bar hidden">
-      <span class="ub-email" id="ub-email"></span>
-      <span class="ub-usage" id="ub-usage"></span>
-      <button type="button" id="plans-btn" class="ub-btn hidden">Plans</button>
-      <button type="button" id="history-btn" class="ub-btn">Audit history</button>
-      <button type="button" id="logout-btn" class="ub-btn">Sign out</button>
+
+  <!-- ── Auth screen (no sidebar) ──────────────────────────── -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-brand"><span class="brand-mark">◈</span> ClauseGuard</div>
+    <div class="auth-intro">
+      <h2>Find the money hiding in your vendor contracts</h2>
+      <p>Sign in to run an audit, or create a free account to get started.</p>
     </div>
-
-    <header class="hero">
-      <div class="hero-top">
-        <div class="brand">
-          <span class="brand-mark">◈</span> ClauseGuard
-        </div>
-        <div class="case-stamp"><span class="live-dot"></span> Powered by GPT-4o</div>
+    <div class="auth-card">
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
+        <button type="button" class="auth-tab" data-auth="register">Create account</button>
       </div>
-      <h1>Find the money hiding<br /><em>in your vendor contracts.</em></h1>
-      <p class="hero-sub">
-        Upload a contract, any MOUs or amendments, and the invoices that vendor sent you.
-        Our AI auditor cross-references every line item against your negotiated terms and flags
-        overcharges, missed discounts, and renewal traps, each with the clause that proves it.
-      </p>
-    </header>
+      <form id="auth-form" class="auth-form">
+        <label class="auth-label reg-only hidden" for="auth-name">Full name
+          <input type="text" id="auth-name" autocomplete="name" disabled />
+        </label>
+        <label class="auth-label reg-only hidden" for="auth-company">Company
+          <span class="opt-tag">optional</span>
+          <input type="text" id="auth-company" autocomplete="organization" disabled />
+        </label>
+        <label class="auth-label" for="auth-email">Email
+          <input type="email" id="auth-email" autocomplete="email" required />
+        </label>
+        <label class="auth-label" for="auth-password">Password
+          <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required />
+        </label>
+        <button type="submit" id="auth-submit" class="btn primary">Sign in</button>
+        <p id="auth-error" class="auth-error" role="alert"></p>
+      </form>
+      <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
+    </div>
+  </div>
 
-    <section id="auth-screen" class="auth-screen hidden">
-      <div class="auth-intro">
-        <h2>Find the money hiding in your vendor contracts</h2>
-        <p>Sign in to run an audit, or create a free account to get started.</p>
-      </div>
-      <div class="auth-card">
-        <div class="auth-tabs" role="tablist">
-          <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
-          <button type="button" class="auth-tab" data-auth="register">Create account</button>
+  <!-- ── App shell (sidebar + main — logged-in only) ─────── -->
+  <div id="app-shell" class="app-shell hidden">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span class="brand-mark">◈</span> ClauseGuard</div>
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-item" data-view="dashboard">Dashboard</button>
+        <button type="button" class="nav-item" data-view="new-audit">New Audit</button>
+        <button type="button" class="nav-item" data-view="history">History</button>
+        <button type="button" class="nav-item" data-view="billing" id="billing-nav-item">Billing</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <span id="ub-email" class="ub-email"></span>
+          <span id="ub-usage" class="ub-usage"></span>
         </div>
-        <form id="auth-form" class="auth-form">
-          <label class="auth-label reg-only hidden" for="auth-name">Full name
-            <input type="text" id="auth-name" autocomplete="name" disabled />
-          </label>
-          <label class="auth-label reg-only hidden" for="auth-company">Company <span class="opt-tag">optional</span>
-            <input type="text" id="auth-company" autocomplete="organization" disabled />
-          </label>
-          <label class="auth-label" for="auth-email">Email
-            <input type="email" id="auth-email" autocomplete="email" required />
-          </label>
-          <label class="auth-label" for="auth-password">Password
-            <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required />
-          </label>
-          <button type="submit" id="auth-submit" class="btn primary">Sign in</button>
-          <p id="auth-error" class="auth-error" role="alert"></p>
+        <button type="button" id="logout-btn" class="sidebar-signout">Sign out</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- Dashboard view -->
+      <div id="view-dashboard" class="view">
+        <div class="page-header">
+          <div>
+            <h1 id="dashboard-welcome">Dashboard</h1>
+            <p class="page-sub" id="dashboard-sub"></p>
+          </div>
+          <button type="button" id="new-audit-cta" class="btn primary">+ New audit</button>
+        </div>
+        <div class="stats-row" id="stats-row"></div>
+        <h2 class="section-heading">Recent audits</h2>
+        <div id="recent-audits"></div>
+      </div>
+
+      <!-- New Audit view -->
+      <div id="view-new-audit" class="view hidden">
+        <div class="page-header">
+          <h1>New Audit</h1>
+          <div class="case-stamp"><span class="live-dot"></span> Powered by GPT-4o</div>
+        </div>
+
+        <div class="mode-toggle" role="tablist">
+          <button type="button" class="mode-btn active" data-mode="guided">Guided upload</button>
+          <button type="button" class="mode-btn" data-mode="bulk">Bulk upload</button>
+        </div>
+
+        <form id="analyze-form" class="workflow">
+          <div class="steps">
+            <section class="step">
+              <div class="step-head">
+                <span class="step-num">1</span>
+                <div>
+                  <h2>The contract</h2>
+                  <p>The master agreement with this vendor. <span class="req">Required</span></p>
+                </div>
+              </div>
+              <div class="dropzone" id="dz-contract" data-kind="contract">
+                <input type="file" id="contract-file" accept=".pdf,.txt" hidden />
+                <div class="dz-icon">📄</div>
+                <div class="dz-label">Drop the contract here<br /><span>or tap to browse (PDF or .txt)</span></div>
+              </div>
+              <ul class="file-list" id="list-contract"></ul>
+            </section>
+
+            <section class="step">
+              <div class="step-head">
+                <span class="step-num">2</span>
+                <div>
+                  <h2>MOUs &amp; amendments</h2>
+                  <p>Side letters, renewals, anything that changed the deal. <span class="opt">Optional</span></p>
+                </div>
+              </div>
+              <div class="dropzone" id="dz-supporting" data-kind="supporting">
+                <input type="file" id="supporting-files" accept=".pdf,.txt" multiple hidden />
+                <div class="dz-icon">📎</div>
+                <div class="dz-label">Drop supporting documents<br /><span>up to 10 files</span></div>
+              </div>
+              <ul class="file-list" id="list-supporting"></ul>
+            </section>
+
+            <section class="step">
+              <div class="step-head">
+                <span class="step-num">3</span>
+                <div>
+                  <h2>The invoices</h2>
+                  <p>What this vendor actually billed you. <span class="req">Required</span></p>
+                </div>
+              </div>
+              <div class="dropzone" id="dz-invoices" data-kind="invoices">
+                <input type="file" id="invoice-files" accept=".pdf,.txt,.csv" multiple hidden />
+                <div class="dz-icon">🧾</div>
+                <div class="dz-label">Drop invoices here<br /><span>up to 10 (PDF, .txt, or .csv)</span></div>
+              </div>
+              <ul class="file-list" id="list-invoices"></ul>
+            </section>
+          </div>
+
+          <div class="actions">
+            <button type="submit" id="analyze-btn" class="btn primary">Run expert analysis</button>
+            <button type="button" id="sample-btn" class="btn ghost">Try sample data</button>
+          </div>
         </form>
-        <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
-      </div>
-    </section>
 
-    <main id="app-main" class="hidden">
-      <section id="history-panel" class="history-panel hidden">
-        <div class="history-head">
-          <h2>Audit history</h2>
-          <button type="button" id="history-close" class="ub-btn">Close</button>
+        <div id="bulk-section" class="workflow hidden">
+          <section class="step bulk-step">
+            <div class="step-head">
+              <div>
+                <h2>Drop everything here</h2>
+                <p>Contracts, amendments, and invoices for one or more vendors. We'll sort and pair them automatically.</p>
+              </div>
+            </div>
+            <div class="dropzone" id="dz-bulk" data-kind="bulk">
+              <input type="file" id="bulk-files" accept=".pdf,.txt,.csv" multiple hidden />
+              <div class="dz-icon">📚</div>
+              <div class="dz-label">Drop files here<br /><span>up to 30 files (PDF, .txt, or .csv)</span></div>
+            </div>
+            <ul class="file-list" id="list-bulk"></ul>
+          </section>
+          <div class="actions">
+            <button type="button" id="bulk-analyze-btn" class="btn primary">Sort &amp; analyze</button>
+          </div>
+        </div>
+
+        <p id="status-msg" class="status-msg" role="status"></p>
+        <div id="loading" class="loading hidden">
+          <div class="loading-spinner"></div>
+          <p id="loading-step">Reading contract &amp; supporting documents…</p>
+        </div>
+      </div>
+
+      <!-- Results view -->
+      <div id="view-results" class="view hidden">
+        <div class="page-header">
+          <h1>Audit Results</h1>
+          <button type="button" id="run-another-btn" class="btn ghost">← New audit</button>
+        </div>
+
+        <section id="results" class="results">
+          <article class="memo">
+            <div class="memo-head">
+              <span class="memo-stamp">Audit memo</span>
+              <h2>Executive summary</h2>
+              <button type="button" id="download-pdf-btn" class="btn primary memo-download">Download PDF report</button>
+            </div>
+            <p id="exec-summary"></p>
+          </article>
+
+          <div class="summary-grid">
+            <div class="metric">
+              <div class="metric-label">Monthly leakage</div>
+              <div class="metric-value" id="sum-monthly">$0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Annual recoverable</div>
+              <div class="metric-value danger" id="sum-annual">$0</div>
+            </div>
+            <div class="metric accent">
+              <div class="metric-label">Our fee (25% of recovery)</div>
+              <div class="metric-value" id="sum-fee">$0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Findings</div>
+              <div class="metric-value" id="sum-count">0</div>
+            </div>
+          </div>
+
+          <h2 class="findings-title">Detailed findings</h2>
+          <div id="findings-list"></div>
+
+          <section id="legal" class="legal hidden">
+            <div class="legal-head">
+              <span class="legal-icon">⚖</span>
+              <div>
+                <h2>Legal advisory</h2>
+                <p>Where this relationship stands legally, and how to move forward.</p>
+              </div>
+              <span class="status-pill" id="legal-status"></span>
+            </div>
+            <p class="legal-status-expl" id="legal-status-expl"></p>
+            <div class="legal-block">
+              <h3>What governs the relationship now</h3>
+              <p id="legal-governing"></p>
+            </div>
+            <div class="legal-cols">
+              <div class="legal-block">
+                <h3>Risks of continuing as-is</h3>
+                <ul id="legal-risks" class="risk-list"></ul>
+              </div>
+              <div class="legal-block">
+                <h3>Your leverage</h3>
+                <ul id="legal-leverage" class="leverage-list"></ul>
+              </div>
+            </div>
+            <div class="legal-block">
+              <h3>Recommended path forward</h3>
+              <ol id="legal-path" class="path-list"></ol>
+            </div>
+          </section>
+
+          <p class="disclaimer">
+            This analysis is AI-generated and for informational purposes only, not legal advice.
+            Verify each finding against the source documents and consult licensed counsel before acting.
+          </p>
+        </section>
+
+        <section id="bulk-results" class="results hidden"></section>
+      </div>
+
+      <!-- History view -->
+      <div id="view-history" class="view hidden">
+        <div class="page-header">
+          <h1>Audit History</h1>
         </div>
         <ul id="history-list" class="history-list"></ul>
-      </section>
+      </div>
 
-      <section id="pricing-panel" class="history-panel hidden">
-        <div class="history-head">
-          <h2>Plans &amp; billing</h2>
-          <button type="button" id="pricing-close" class="ub-btn">Close</button>
+      <!-- Billing view -->
+      <div id="view-billing" class="view hidden">
+        <div class="page-header">
+          <h1>Plans &amp; Billing</h1>
         </div>
         <p id="billing-msg" class="billing-msg"></p>
         <div id="pricing-grid" class="pricing-grid"></div>
         <div id="pricing-actions" class="pricing-actions"></div>
-      </section>
-
-      <div class="mode-toggle" role="tablist">
-        <button type="button" class="mode-btn active" data-mode="guided">Guided upload</button>
-        <button type="button" class="mode-btn" data-mode="bulk">Bulk upload</button>
       </div>
 
-      <form id="analyze-form" class="workflow">
-        <div class="steps">
-          <section class="step">
-            <div class="step-head">
-              <span class="step-num">1</span>
-              <div>
-                <h2>The contract</h2>
-                <p>The master agreement with this vendor. <span class="req">Required</span></p>
-              </div>
-            </div>
-            <div class="dropzone" id="dz-contract" data-kind="contract">
-              <input type="file" id="contract-file" accept=".pdf,.txt" hidden />
-              <div class="dz-icon">📄</div>
-              <div class="dz-label">Drop the contract here<br /><span>or tap to browse (PDF or .txt)</span></div>
-            </div>
-            <ul class="file-list" id="list-contract"></ul>
-          </section>
-
-          <section class="step">
-            <div class="step-head">
-              <span class="step-num">2</span>
-              <div>
-                <h2>MOUs &amp; amendments</h2>
-                <p>Side letters, renewals, anything that changed the deal. <span class="opt">Optional</span></p>
-              </div>
-            </div>
-            <div class="dropzone" id="dz-supporting" data-kind="supporting">
-              <input type="file" id="supporting-files" accept=".pdf,.txt" multiple hidden />
-              <div class="dz-icon">📎</div>
-              <div class="dz-label">Drop supporting documents<br /><span>up to 10 files</span></div>
-            </div>
-            <ul class="file-list" id="list-supporting"></ul>
-          </section>
-
-          <section class="step">
-            <div class="step-head">
-              <span class="step-num">3</span>
-              <div>
-                <h2>The invoices</h2>
-                <p>What this vendor actually billed you. <span class="req">Required</span></p>
-              </div>
-            </div>
-            <div class="dropzone" id="dz-invoices" data-kind="invoices">
-              <input type="file" id="invoice-files" accept=".pdf,.txt,.csv" multiple hidden />
-              <div class="dz-icon">🧾</div>
-              <div class="dz-label">Drop invoices here<br /><span>up to 10 (PDF, .txt, or .csv)</span></div>
-            </div>
-            <ul class="file-list" id="list-invoices"></ul>
-          </section>
-        </div>
-
-        <div class="actions">
-          <button type="submit" id="analyze-btn" class="btn primary">Run expert analysis</button>
-          <button type="button" id="sample-btn" class="btn ghost">Try sample data</button>
-        </div>
-      </form>
-
-      <div id="bulk-section" class="workflow hidden">
-        <section class="step bulk-step">
-          <div class="step-head">
-            <div>
-              <h2>Drop everything here</h2>
-              <p>Contracts, amendments, and invoices for one or more vendors, all in one drop. We'll sort and pair them up automatically.</p>
-            </div>
-          </div>
-          <div class="dropzone" id="dz-bulk" data-kind="bulk">
-            <input type="file" id="bulk-files" accept=".pdf,.txt,.csv" multiple hidden />
-            <div class="dz-icon">📚</div>
-            <div class="dz-label">Drop files here<br /><span>up to 30 files (PDF, .txt, or .csv)</span></div>
-          </div>
-          <ul class="file-list" id="list-bulk"></ul>
-        </section>
-
-        <div class="actions">
-          <button type="button" id="bulk-analyze-btn" class="btn primary">Sort &amp; analyze</button>
-        </div>
-      </div>
-
-      <p id="status-msg" class="status-msg" role="status"></p>
-
-      <div id="loading" class="loading hidden">
-        <div class="loading-spinner"></div>
-        <p id="loading-step">Reading contract &amp; supporting documents…</p>
-      </div>
-
-      <section id="results" class="results hidden">
-        <article class="memo">
-          <div class="memo-head">
-            <span class="memo-stamp">Audit memo</span>
-            <h2>Executive summary</h2>
-            <button type="button" id="download-pdf-btn" class="btn primary memo-download">Download PDF report</button>
-          </div>
-          <p id="exec-summary"></p>
-        </article>
-
-        <div class="summary-grid">
-          <div class="metric">
-            <div class="metric-label">Monthly leakage</div>
-            <div class="metric-value" id="sum-monthly">$0</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Annual recoverable</div>
-            <div class="metric-value danger" id="sum-annual">$0</div>
-          </div>
-          <div class="metric accent">
-            <div class="metric-label">Our fee (25% of recovery)</div>
-            <div class="metric-value" id="sum-fee">$0</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Findings</div>
-            <div class="metric-value" id="sum-count">0</div>
-          </div>
-        </div>
-
-        <h2 class="findings-title">Detailed findings</h2>
-        <div id="findings-list"></div>
-
-        <section id="legal" class="legal hidden">
-          <div class="legal-head">
-            <span class="legal-icon">⚖</span>
-            <div>
-              <h2>Legal advisory</h2>
-              <p>Where this relationship stands legally, and how to move forward.</p>
-            </div>
-            <span class="status-pill" id="legal-status"></span>
-          </div>
-
-          <p class="legal-status-expl" id="legal-status-expl"></p>
-
-          <div class="legal-block">
-            <h3>What governs the relationship now</h3>
-            <p id="legal-governing"></p>
-          </div>
-
-          <div class="legal-cols">
-            <div class="legal-block">
-              <h3>Risks of continuing as-is</h3>
-              <ul id="legal-risks" class="risk-list"></ul>
-            </div>
-            <div class="legal-block">
-              <h3>Your leverage</h3>
-              <ul id="legal-leverage" class="leverage-list"></ul>
-            </div>
-          </div>
-
-          <div class="legal-block">
-            <h3>Recommended path forward</h3>
-            <ol id="legal-path" class="path-list"></ol>
-          </div>
-        </section>
-
-        <p class="disclaimer">
-          This analysis is AI-generated and for informational purposes only, not legal advice.
-          Verify each finding against the source documents and consult licensed counsel before acting.
-        </p>
-      </section>
-
-      <section id="bulk-results" class="results hidden"></section>
     </main>
-
-    <footer class="footer">ClauseGuard · AI contract-compliance auditing</footer>
   </div>
 
   <script src="app.js"></script>
