@@ -19,6 +19,7 @@
   --green-glow-sm: 0 0 16px rgba(34,197,94,0.30);
   --green-glow-md: 0 0 28px rgba(34,197,94,0.18);
   --green-glow-lg: 0 0 48px rgba(34,197,94,0.12);
+  --brand-glow: 0 0 14px rgba(34,197,94,0.50);
 
   --text:          #e5e7eb;
   --text-dim:      #9ca3af;
@@ -26,6 +27,8 @@
 
   --danger:        #fb7185;
   --danger-glow:   0 0 12px rgba(251,113,133,0.35);
+  --danger-bg: rgba(251,113,133,0.08);
+  --danger-border: rgba(251,113,133,0.30);
   --amber:         #fbbf24;
   --border:        rgba(255,255,255,0.07);
   --border-strong: rgba(255,255,255,0.12);
@@ -105,7 +108,7 @@ body::before {
 
 .auth-brand .brand-mark {
   color: var(--green);
-  text-shadow: 0 0 14px rgba(34,197,94,0.5);
+  text-shadow: var(--brand-glow);
 }
 
 .auth-intro {
@@ -273,7 +276,7 @@ body::before {
 
 .sidebar-brand .brand-mark {
   color: var(--green);
-  text-shadow: 0 0 14px rgba(34,197,94,0.5);
+  text-shadow: var(--brand-glow);
 }
 
 .sidebar-nav {
@@ -371,7 +374,7 @@ body::before {
 .sidebar-signout:hover {
   color: var(--danger);
   border-color: rgba(251,113,133,0.4);
-  background: rgba(251,113,133,0.08);
+  background: var(--danger-bg);
 }
 
 /* ── Main content ────────────────────────────────────────── */
@@ -631,8 +634,8 @@ body::before {
 .btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
+  transform: none;
+  box-shadow: none;
 }
 
 /* ── Mode toggle ─────────────────────────────────────────── */
@@ -1052,7 +1055,7 @@ body::before {
   color: var(--text-faint);
 }
 
-.badge.sev-critical { color: var(--danger); background: rgba(251,113,133,0.1);  border-color: rgba(251,113,133,0.3); }
+.badge.sev-critical { color: var(--danger); background: rgba(251,113,133,0.1);  border-color: var(--danger-border); }
 .badge.sev-moderate { color: var(--amber);  background: rgba(251,191,36,0.1);   border-color: rgba(251,191,36,0.3); }
 .badge.sev-minor    { color: var(--green);  background: var(--green-tint);       border-color: var(--green-border); }
 
@@ -1093,7 +1096,7 @@ body::before {
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   font-size: 13.5px;
-  color: #86efac;
+  color: var(--green);
 }
 
 .action-row .label { color: var(--green); }
@@ -1145,7 +1148,7 @@ body::before {
 }
 
 .status-pill.st-expired_holdover,
-.status-pill.st-expiring_soon { color: var(--danger); background: rgba(251,113,133,0.1);  border-color: rgba(251,113,133,0.3); }
+.status-pill.st-expiring_soon { color: var(--danger); background: rgba(251,113,133,0.1);  border-color: var(--danger-border); }
 .status-pill.st-active         { color: var(--green);  background: var(--green-tint);       border-color: var(--green-border); }
 .status-pill.st-auto_renewed   { color: var(--amber);  background: rgba(251,191,36,0.1);    border-color: rgba(251,191,36,0.3); }
 
@@ -1280,8 +1283,8 @@ body::before {
 
 .billing-msg.error {
   color: var(--danger);
-  background: rgba(251,113,133,0.08);
-  border-color: rgba(251,113,133,0.3);
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
 }
 
 .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
