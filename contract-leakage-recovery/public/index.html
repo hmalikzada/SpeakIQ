@@ -86,6 +86,46 @@
 
       <!-- Dashboard view -->
       <div id="view-dashboard" class="view">
+
+        <div class="dashboard-hero">
+          <div class="hero-illustration">
+            <div class="hero-doc hero-doc--back"></div>
+            <div class="hero-doc hero-doc--mid"></div>
+            <div class="hero-doc hero-doc--front">
+              <div class="hero-scan-line"></div>
+              <div class="hero-doc-lines">
+                <div class="hero-line"></div>
+                <div class="hero-line hero-line--highlight"></div>
+                <div class="hero-line"></div>
+                <div class="hero-line hero-line--danger"></div>
+                <div class="hero-line hero-line--short"></div>
+              </div>
+            </div>
+            <div class="hero-magnifier" aria-hidden="true">🔍</div>
+          </div>
+          <div class="hero-body">
+            <h2 class="hero-title">Scan any vendor contract in minutes</h2>
+            <p class="hero-sub">AI reads every clause, cross-references every invoice, and surfaces exactly where you're being overcharged.</p>
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <span class="hero-stat-val">$2.4M</span>
+                <span class="hero-stat-label">Recovered for clients</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-stat-val hero-stat-val--danger">18%</span>
+                <span class="hero-stat-label">Avg overcharge rate</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-stat-val">340+</span>
+                <span class="hero-stat-label">Audits completed</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button type="button" class="btn primary" onclick="showView('new-audit')">+ New audit</button>
+          </div>
+        </div>
+
         <div class="page-header">
           <div>
             <h1 id="dashboard-welcome">Dashboard</h1>
