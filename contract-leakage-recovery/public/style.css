@@ -941,14 +941,14 @@ body::before {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px;
-  box-shadow: var(--shadow-sm), 0 0 20px rgba(34,197,94,0.05);
+  box-shadow: var(--shadow-sm), 0 0 24px rgba(34,197,94,0.06);
   transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .metric:hover {
   transform: translateY(-2px);
   border-color: var(--green-border);
-  box-shadow: var(--shadow-md), 0 0 24px rgba(34,197,94,0.12);
+  box-shadow: var(--shadow-md), var(--green-glow-md);
 }
 
 .metric.accent {
