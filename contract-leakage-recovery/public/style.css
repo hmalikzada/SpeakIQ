@@ -1522,7 +1522,7 @@ body::before {
 .hero-line {
   height: 5px;
   border-radius: 3px;
-  background: var(--faint);
+  background: var(--text-faint);
   width: 85%;
 }
 
