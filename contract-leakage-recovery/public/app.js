@@ -224,7 +224,7 @@ async function runAnalysis(url, options) {
 
     renderResults(data);
     if (data.usage) setUsage(data.usage);
-    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showView('results');
   } catch (err) {
     setStatus(err.message, true);
   } finally {
@@ -253,7 +253,7 @@ async function runBulkAnalysis(formData) {
 
     renderBulkResults(data);
     if (data.usage) setUsage(data.usage);
-    bulkResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showView('results');
   } catch (err) {
     setStatus(err.message, true);
   } finally {
@@ -950,15 +950,13 @@ async function viewAudit(id) {
     }
     if (!res.ok) throw new Error('Could not load that audit.');
     const audit = await res.json();
-
+    showView('results');
     if (audit.mode === 'bulk') {
       results.classList.add('hidden');
       renderBulkResults(audit.result);
-      bulkResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       bulkResults.classList.add('hidden');
       renderResults(audit.result);
-      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   } catch (err) {
     setStatus(err.message, true);
