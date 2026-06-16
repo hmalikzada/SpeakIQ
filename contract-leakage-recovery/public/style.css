@@ -82,6 +82,18 @@ body::before {
   100% { transform: translate(4%,-2%) scale(1.02); }
 }
 
+@keyframes logoScan {
+  0%   { transform: translateY(0);    opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { transform: translateY(22px); opacity: 1; }
+  95%  { transform: translateY(24px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 0; }
+}
+
+.logo-scan {
+  animation: logoScan 3s ease-in-out infinite;
+}
+
 /* ── Utility ─────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
@@ -104,11 +116,19 @@ body::before {
   color: var(--text);
   margin-bottom: 32px;
   letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.auth-brand .brand-mark {
-  color: var(--green);
-  text-shadow: var(--brand-glow);
+.brand-mark-svg {
+  flex-shrink: 0;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.auth-brand .brand-mark-svg {
+  filter: drop-shadow(0 0 8px rgba(34,197,94,0.6));
 }
 
 .auth-intro {
@@ -272,11 +292,9 @@ body::before {
   letter-spacing: -0.01em;
   padding: 24px 20px 20px;
   border-bottom: 1px solid var(--border);
-}
-
-.sidebar-brand .brand-mark {
-  color: var(--green);
-  text-shadow: var(--brand-glow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sidebar-nav {
