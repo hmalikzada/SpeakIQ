@@ -81,6 +81,11 @@ Return a single JSON object with this shape:
   "fees": [
     { "description": "string", "amount": number, "condition": "string describing when/how often it is billed" }
   ],
+  "late_fee": {
+    "allowed": true/false/null,
+    "terms": "the exact late-fee and interest terms the vendor may charge the customer — lateness threshold (e.g. 'more than 10 days late'), the fee (e.g. 'greater of 15% or $29'), interest (e.g. '1.5% per month'), and any returned-check fee; null if the contract is silent",
+    "threshold_days": number or null
+  },
   "notes": "any other clause that could affect whether an invoice is correct"
 }
 
@@ -88,6 +93,8 @@ Use null where a field is not present in the contract. Quote or closely paraphra
 
 const INVOICE_SYSTEM_PROMPT = `You are an invoice parsing assistant for a financial audit tool.
 Read the supplied invoice text (it may be a PDF extract or CSV dump) and extract its contents.
+List EVERY charge as its own line item — including balance-forward / past-due lines, late charges,
+interest, taxes, surcharges, and credits. Never collapse multiple charges into one line.
 
 Return a single JSON object with this shape:
 {
@@ -96,12 +103,21 @@ Return a single JSON object with this shape:
   "invoice_date": "YYYY-MM-DD or null",
   "billing_period": { "start": "YYYY-MM-DD or null", "end": "YYYY-MM-DD or null" },
   "line_items": [
-    { "description": "string", "quantity": number or null, "unit_price": number or null, "amount": number }
+    {
+      "description": "the exact line text, including its service/billing period and whether it is a prior-period 'balance forward' / past-due charge or a current charge",
+      "period": "the billing or service dates for this specific line if shown (e.g. '05/10/2026-06/10/2026'), else null",
+      "kind": "base_recurring | usage_overage | late_fee | interest | tax | surcharge | credit | other",
+      "quantity": number or null,
+      "unit_price": number or null,
+      "amount": number
+    }
   ],
   "total": number or null
 }
 
-If quantity/unit_price aren't broken out, leave them null but still record "amount".`;
+Preserve each line's period and any "balance forward" / "past due" / "current charges" label — these
+distinguish legitimate charges for different months from true duplicates. If quantity/unit_price aren't
+broken out, leave them null but still record "amount".`;
 
 export async function extractContractTerms(text) {
   return chatJSON([

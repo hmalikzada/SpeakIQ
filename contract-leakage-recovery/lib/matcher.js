@@ -9,13 +9,23 @@ You will be given:
   - "contract": structured terms extracted from a vendor contract (which may include MOUs, amendments, and side letters)
   - "invoices": an array of structured invoices from the same vendor
 
-Find every place where an invoice does not match what the contract specifies. Look specifically for:
+Reconcile the invoice line by line: for EACH line item, identify which contract term governs it (base/recurring charge, usage/overage rate, late fee, interest, tax, or one-time fee) and check whether the billed amount is what the contract allows. Account for every charge. Look specifically for:
   - Overcharges: a rate or fee billed above what the contract's pricing/tier allows
   - Escalator violations: a rate increase larger than "escalator_cap_pct" allows, comparing against the contract's base rate
   - Missed discounts: a discount the contract (or any MOU/amendment) entitles the customer to that isn't reflected on the invoice
-  - Duplicate or out-of-window fees: one-time fees (e.g. setup fees) billed more than once, or billed outside the window the contract allows
+  - Late fees / interest billed beyond contract terms (see the rules below)
+  - Unauthorized charges: any line item with no basis in the contract's pricing, fees, or terms
+  - Duplicate fees: the SAME charge for the SAME period/service billed more than once (see the rules below)
   - Auto-renewal risk: contract is near its end date with an auto-renewal clause and a notice deadline that may be approaching
   - Any other discrepancy between contract terms and invoiced amounts
+
+CRITICAL RECONCILIATION RULES — apply these before flagging anything:
+  1. BILLING PERIODS / BALANCE FORWARD: A recurring charge (e.g. a monthly lease or contract payment) billed for DIFFERENT periods is legitimate and expected — it is NOT a duplicate. Invoices routinely show a prior period carried over as a "balance forward" or "past due" line PLUS the current period's charge: that is two different months, not a double-bill. Only flag a "duplicate_fee" when the identical charge for the SAME period/service appears more than once. Use each line item's dates/billing_period to tell periods apart; if two equal amounts cover different periods, do NOT flag them.
+  2. LATE FEES & INTEREST: When the invoice has a late fee or interest charge, check it against the contract's late_fee terms, reading the formula PRECISELY. "Greater of 15% or $29" means the permitted fee is the LARGER of (15% of the overdue amount) or $29 — so $29 is a floor, NOT a cap, and a fee above $29 is NOT automatically an overcharge; it is allowed as long as it does not exceed 15% of the overdue amount. To judge a late fee you need the overdue principal it was computed on:
+     - If that base is shown (e.g. a balance-forward line for the same vendor), compute permitted = greater of (rate × overdue) or the flat floor, and flag ONLY the excess (billed minus permitted).
+     - If the overdue base is NOT shown on the invoice, do NOT assert a precise overcharge. Raise a "needs verification" finding instead (type "other", severity minor or moderate, confidence low/medium), recommend the customer request the overdue-balance breakdown, and set both dollar impacts to 0 — unless the billed fee exceeds even the most generous reading of the terms.
+     - Only when the contract bars late fees entirely (late_fee.allowed = false) should you flag the whole fee.
+     Always show the permitted-vs-billed math in "description" (e.g. "15% of the $1,527.51 balance = $229.13, so the $152.75 fee is within terms").
 
 Return a single JSON object: { "executive_summary": "...", "findings": [ ... ] }
 
