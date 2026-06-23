@@ -3,22 +3,74 @@
  * GPT-4o in JSON mode to pull out the structured fields the matcher needs.
  */
 import pdfParse from 'pdf-parse';
-import { chatJSON } from './openai.js';
+import mammoth from 'mammoth';
+import { chatJSON, chatText } from './openai.js';
 
 // Cap how much raw text we send per document to keep requests fast/cheap.
 const MAX_CHARS = 60000;
 
+// Below this many characters, a PDF almost certainly has no real text layer
+// (i.e. it's a scan/image), so we fall back to GPT-4o vision to read it.
+const SCANNED_TEXT_THRESHOLD = 200;
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 export async function fileToText(file) {
-  const isPDF =
-    file.mimetype === 'application/pdf' ||
-    file.originalname.toLowerCase().endsWith('.pdf');
+  const name = (file.originalname || '').toLowerCase();
+  const isPDF = file.mimetype === 'application/pdf' || name.endsWith('.pdf');
+  const isDocx = file.mimetype === DOCX_MIME || name.endsWith('.docx');
+
+  // Word documents are binary (zipped XML) — extract their real text, never
+  // toString('utf8') the raw bytes (which produces garbage the model can't read).
+  if (isDocx) {
+    const { value } = await mammoth.extractRawText({ buffer: file.buffer });
+    return value || '';
+  }
 
   if (isPDF) {
-    const { text } = await pdfParse(file.buffer);
+    let text = '';
+    try {
+      ({ text } = await pdfParse(file.buffer));
+    } catch {
+      text = '';
+    }
+    if ((text || '').trim().length >= SCANNED_TEXT_THRESHOLD) return text;
+
+    // Little/no extractable text → likely a scanned/image PDF. Ask GPT-4o to read
+    // it directly. If that fails for any reason, fall back to whatever pdf-parse got
+    // so behaviour never regresses below today's.
+    try {
+      const ocr = await ocrDocument(file, 'application/pdf');
+      if (ocr && ocr.trim().length > (text || '').trim().length) return ocr;
+    } catch (err) {
+      console.error(`OCR fallback failed for ${file.originalname}:`, err.message);
+    }
     return text;
   }
 
   return file.buffer.toString('utf8');
+}
+
+// Uses GPT-4o's vision/file support to transcribe a document the text extractors
+// couldn't read (e.g. a scanned PDF). Returns a verbatim plain-text transcription.
+async function ocrDocument(file, mediaType) {
+  const dataUrl = `data:${mediaType};base64,${file.buffer.toString('base64')}`;
+  return chatText([
+    {
+      role: 'system',
+      content:
+        'You are an OCR engine. Transcribe the supplied document VERBATIM as plain text. ' +
+        'Preserve every number, date, line item, label, and table row exactly as printed. ' +
+        'Do not summarise, interpret, reorder, or omit anything. Output only the transcription.',
+    },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: `Transcribe this document (${file.originalname}) completely and exactly:` },
+        { type: 'file', file: { filename: file.originalname, file_data: dataUrl } },
+      ],
+    },
+  ]);
 }
 
 const CONTRACT_SYSTEM_PROMPT = `You are a contract analysis assistant for a financial audit tool.

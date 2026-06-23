@@ -18,7 +18,25 @@ export function hasApiKey() {
 /**
  * Calls the chat completions API in JSON mode and returns the parsed object.
  */
-export async function chatJSON(messages, { model = MODEL, temperature = 0 } = {}) {
+export async function chatJSON(messages, opts = {}) {
+  const content = await chatCompletion(messages, { ...opts, json: true });
+  return JSON.parse(content);
+}
+
+/**
+ * Calls the chat completions API for a plain-text response. Supports multimodal
+ * content parts (e.g. a `{ type: 'file', file: { file_data } }` PDF part) so the
+ * model can OCR scanned documents. Returns the raw string content.
+ */
+export async function chatText(messages, opts = {}) {
+  return chatCompletion(messages, { ...opts, json: false });
+}
+
+/**
+ * Shared request loop: abort-based timeout + exponential-backoff retries on
+ * rate-limit / transient upstream errors. Returns the raw message content.
+ */
+async function chatCompletion(messages, { model = MODEL, temperature = 0, json = false } = {}) {
   if (!KEY) {
     throw new Error('OPENAI_API_KEY is not configured on the server.');
   }
@@ -44,7 +62,7 @@ export async function chatJSON(messages, { model = MODEL, temperature = 0 } = {}
         body: JSON.stringify({
           model,
           temperature,
-          response_format: { type: 'json_object' },
+          ...(json ? { response_format: { type: 'json_object' } } : {}),
           messages,
         }),
         signal: controller.signal,
@@ -66,7 +84,7 @@ export async function chatJSON(messages, { model = MODEL, temperature = 0 } = {}
         throw new Error('OpenAI returned an empty response.');
       }
 
-      return JSON.parse(content);
+      return content;
     } catch (err) {
       // Timeouts (AbortError) and network failures (TypeError from fetch) are retryable.
       const retryable = err.name === 'AbortError' || err.name === 'TypeError';
