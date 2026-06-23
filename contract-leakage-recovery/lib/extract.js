@@ -4,7 +4,8 @@
  */
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
-import { chatJSON, chatText } from './openai.js';
+import { chatJSON } from './openai.js';
+import { transcribePdf, hasClaude } from './claude.js';
 
 // Cap how much raw text we send per document to keep requests fast/cheap.
 const MAX_CHARS = 60000;
@@ -36,41 +37,22 @@ export async function fileToText(file) {
     }
     if ((text || '').trim().length >= SCANNED_TEXT_THRESHOLD) return text;
 
-    // Little/no extractable text → likely a scanned/image PDF. Ask GPT-4o to read
-    // it directly. If that fails for any reason, fall back to whatever pdf-parse got
-    // so behaviour never regresses below today's.
-    try {
-      const ocr = await ocrDocument(file, 'application/pdf');
-      if (ocr && ocr.trim().length > (text || '').trim().length) return ocr;
-    } catch (err) {
-      console.error(`OCR fallback failed for ${file.originalname}:`, err.message);
+    // Little/no extractable text → likely a scanned/image PDF, which GPT-4o reads
+    // poorly. Claude reads scans far better, so use it ONLY here (keeps Claude usage
+    // minimal). On any failure, fall back to whatever pdf-parse got so behaviour
+    // never regresses below today's.
+    if (hasClaude()) {
+      try {
+        const transcript = await transcribePdf(file.buffer);
+        if (transcript && transcript.trim().length > (text || '').trim().length) return transcript;
+      } catch (err) {
+        console.error(`Claude OCR fallback failed for ${file.originalname}:`, err.message);
+      }
     }
     return text;
   }
 
   return file.buffer.toString('utf8');
-}
-
-// Uses GPT-4o's vision/file support to transcribe a document the text extractors
-// couldn't read (e.g. a scanned PDF). Returns a verbatim plain-text transcription.
-async function ocrDocument(file, mediaType) {
-  const dataUrl = `data:${mediaType};base64,${file.buffer.toString('base64')}`;
-  return chatText([
-    {
-      role: 'system',
-      content:
-        'You are an OCR engine. Transcribe the supplied document VERBATIM as plain text. ' +
-        'Preserve every number, date, line item, label, and table row exactly as printed. ' +
-        'Do not summarise, interpret, reorder, or omit anything. Output only the transcription.',
-    },
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: `Transcribe this document (${file.originalname}) completely and exactly:` },
-        { type: 'file', file: { filename: file.originalname, file_data: dataUrl } },
-      ],
-    },
-  ]);
 }
 
 const CONTRACT_SYSTEM_PROMPT = `You are a contract analysis assistant for a financial audit tool.
