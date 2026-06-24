@@ -133,7 +133,7 @@ body::before {
 
 .auth-intro {
   text-align: center;
-  max-width: 420px;
+  max-width: 480px;
   margin-bottom: 28px;
 }
 
@@ -152,6 +152,14 @@ body::before {
   font-size: 14.5px;
   color: var(--text-dim);
 }
+
+.auth-pitch {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.auth-pitch strong { color: var(--text); font-weight: 600; }
 
 .auth-card {
   width: 100%;
