@@ -25,9 +25,21 @@ const authPassword = document.getElementById('auth-password');
 const authSubmit = document.getElementById('auth-submit');
 const authError = document.getElementById('auth-error');
 const authTabs = document.querySelectorAll('.auth-tab');
-const ubEmail = document.getElementById('ub-email');
-const ubUsage = document.getElementById('ub-usage');
-const logoutBtn = document.getElementById('logout-btn');
+// Account menu (top-right)
+const accountWrap = document.querySelector('.account');
+const accountChip = document.getElementById('account-chip');
+const accountDropdown = document.getElementById('account-dropdown');
+const accountAvatar = document.getElementById('account-avatar');
+const accountChipName = document.getElementById('account-chip-name');
+const accountChipPlan = document.getElementById('account-chip-plan');
+const accountDdName = document.getElementById('account-dd-name');
+const accountDdEmail = document.getElementById('account-dd-email');
+const accountUsageCount = document.getElementById('account-usage-count');
+const usageBarFill = document.getElementById('usage-bar-fill');
+const accountUsagePlan = document.getElementById('account-usage-plan');
+const accountUpgrade = document.getElementById('account-upgrade');
+const accountSignout = document.getElementById('account-signout');
+const auditsLeft = document.getElementById('audits-left');
 
 // Sidebar nav
 const navItems = document.querySelectorAll('.nav-item');
@@ -73,6 +85,14 @@ runAnotherBtn.addEventListener('click', () => showView('new-audit'));
 
 const fmtUsd = (n) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+
+function initialsFor(user) {
+  const src = (user.name || user.email || '').trim();
+  if (!src) return '··';
+  const parts = src.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return parts[0][0] + parts[1][0];
+  return src.slice(0, 2);
+}
 
 /* ── Dropzones ──────────────────────────────────────────────── */
 // kind -> { files, input, listEl, multiple, max }
@@ -793,12 +813,16 @@ function showApp(user, usage) {
   document.body.classList.remove('logged-out');
   authScreen.classList.add('hidden');
   appShell.classList.remove('hidden');
-  ubEmail.textContent = user.name ? `${user.name} · ${user.email}` : user.email;
+  accountChipName.textContent = user.name || user.email;
+  accountDdName.textContent = user.name || '';
+  accountDdEmail.textContent = user.email;
+  accountAvatar.textContent = initialsFor(user);
   if (usage) {
     setUsage(usage);
     currentPlan = usage.plan;
   }
   billingNavItem.classList.toggle('hidden', !billingEnabled);
+  accountUpgrade.classList.toggle('hidden', !billingEnabled);
   showView('dashboard');
 }
 
@@ -811,8 +835,23 @@ function showAuth() {
 }
 
 function setUsage(usage) {
-  const limit = usage.limit == null ? '∞' : usage.limit;
-  ubUsage.textContent = `${usage.used} / ${limit} audits · ${usage.planLabel}`;
+  cachedUsage = usage;
+  const unlimited = usage.limit == null;
+  const limit = unlimited ? '∞' : usage.limit;
+  accountChipPlan.textContent = usage.planLabel;
+  accountUsageCount.textContent = `${usage.used} / ${limit}`;
+  accountUsagePlan.textContent = `${usage.planLabel} plan`;
+
+  const pct = unlimited ? 100 : Math.min(100, Math.round((usage.used / Math.max(usage.limit, 1)) * 100));
+  usageBarFill.style.width = `${pct}%`;
+  usageBarFill.classList.toggle('high', !unlimited && pct >= 80);
+
+  if (unlimited) {
+    auditsLeft.textContent = 'Unlimited audits on your plan';
+  } else {
+    const left = Math.max(0, usage.limit - usage.used);
+    auditsLeft.textContent = `${left} of ${usage.limit} audits left this month`;
+  }
 }
 
 function renderDashboard() {
@@ -961,7 +1000,32 @@ authForm.addEventListener('submit', async (e) => {
   }
 });
 
-logoutBtn.addEventListener('click', async () => {
+/* ── Account menu (top-right) ───────────────────────────── */
+function closeAccountMenu() {
+  accountDropdown.classList.add('hidden');
+  accountChip.setAttribute('aria-expanded', 'false');
+}
+
+accountChip.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const nowHidden = accountDropdown.classList.toggle('hidden');
+  accountChip.setAttribute('aria-expanded', String(!nowHidden));
+});
+
+document.addEventListener('click', (e) => {
+  if (!accountWrap.contains(e.target)) closeAccountMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeAccountMenu();
+});
+
+accountUpgrade.addEventListener('click', () => {
+  closeAccountMenu();
+  showView('billing');
+});
+
+accountSignout.addEventListener('click', async () => {
+  closeAccountMenu();
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
   } catch {

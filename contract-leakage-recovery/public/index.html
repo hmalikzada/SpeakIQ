@@ -74,16 +74,41 @@
         <button type="button" class="nav-item" data-view="billing" id="billing-nav-item">Billing</button>
       </nav>
       <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <span id="ub-email" class="ub-email"></span>
-          <span id="ub-usage" class="ub-usage"></span>
-        </div>
-        <button type="button" id="logout-btn" class="sidebar-signout">Sign out</button>
         <p class="sidebar-credit">Designed &amp; developed by <span>Inara Services LLC</span></p>
       </div>
     </aside>
 
     <main class="main-content">
+
+      <!-- Top bar: account menu (persistent across every view) -->
+      <header class="topbar">
+        <div class="account">
+          <button type="button" class="account-chip" id="account-chip" aria-haspopup="true" aria-expanded="false">
+            <span class="account-avatar" id="account-avatar">··</span>
+            <span class="account-chip-text">
+              <span class="account-chip-name" id="account-chip-name">Account</span>
+              <span class="account-chip-plan" id="account-chip-plan"></span>
+            </span>
+            <span class="account-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="account-dropdown hidden" id="account-dropdown" role="menu">
+            <div class="account-dd-head">
+              <span class="account-dd-name" id="account-dd-name"></span>
+              <span class="account-dd-email" id="account-dd-email"></span>
+            </div>
+            <div class="account-usage">
+              <div class="account-usage-top">
+                <span>Audits this month</span>
+                <span id="account-usage-count">—</span>
+              </div>
+              <div class="usage-bar"><div class="usage-bar-fill" id="usage-bar-fill"></div></div>
+              <span class="account-usage-plan" id="account-usage-plan"></span>
+            </div>
+            <button type="button" class="account-dd-item" id="account-upgrade">Upgrade plan</button>
+            <button type="button" class="account-dd-item danger" id="account-signout">Sign out</button>
+          </div>
+        </div>
+      </header>
 
       <!-- Dashboard view -->
       <div id="view-dashboard" class="view">
@@ -143,7 +168,7 @@
       <div id="view-new-audit" class="view hidden">
         <div class="page-header">
           <h1>New Audit</h1>
-          <div class="case-stamp"><span class="live-dot"></span> Powered by GPT-4o</div>
+          <div class="case-stamp"><span class="live-dot"></span> Powered by GPT-4o + Claude</div>
         </div>
 
         <div class="mode-toggle" role="tablist">
@@ -205,6 +230,7 @@
           <div class="actions">
             <button type="submit" id="analyze-btn" class="btn primary">Run expert analysis</button>
             <button type="button" id="sample-btn" class="btn ghost">Try sample data</button>
+            <span class="audits-left" id="audits-left"></span>
           </div>
         </form>
 
