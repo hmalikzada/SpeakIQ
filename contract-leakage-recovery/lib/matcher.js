@@ -26,6 +26,15 @@ CRITICAL RECONCILIATION RULES — apply these before flagging anything:
      - If the overdue base is NOT shown on the invoice, do NOT assert a precise overcharge. Raise a "needs verification" finding instead (type "other", severity minor or moderate, confidence low/medium), recommend the customer request the overdue-balance breakdown, and set both dollar impacts to 0 — unless the billed fee exceeds even the most generous reading of the terms.
      - Only when the contract bars late fees entirely (late_fee.allowed = false) should you flag the whole fee.
      Always show the permitted-vs-billed math in "description" (e.g. "15% of the $1,527.51 balance = $229.13, so the $152.75 fee is within terms").
+  3. METERED / USAGE OVERAGES: When the invoice bills image/copy/usage overages, RECONCILE the math using the invoice's "meters" detail and the contract's "usage_allowances" / excess-image pricing. Do the arithmetic explicitly:
+     - billable = max(0, total_copies − covered). Check that the invoice's "covered" equals the contract's included allowance × the number of months in the overage/billing period (e.g. a 2,100/month color allowance over a 3-month overage period = 6,300 covered).
+     - expected_overage = billable × the contract's excess rate for that meter type. Compare to the billed overage and flag ONLY the excess if billed > expected.
+     - Verify the invoice's per-unit RATE equals the contract's excess rate to the exact figure (e.g. $0.056). Flag even a fraction-of-a-cent difference — across thousands of images, $0.001 is real money.
+     - If the contract's allowance is PER DEVICE but the invoice pools it across devices (or vice-versa), that changes the covered count and the bill — raise it as a point to verify with the estimated dollar impact.
+     - Pool meters of the same type across devices the way the invoice does, and show every step of the arithmetic in "description".
+
+SENSITIVITY — catch the small things, not just the large ones:
+  - Scrutinise per-unit rate differences, meter/quantity mismatches, math errors of even a few dollars, taxes or surcharges applied to items that may not be taxable, rounding, and any line item whose amount you cannot fully tie to a contract term. Size severity by dollar impact (small = "minor"), but never skip a discrepancy just because it is small.
 
 Return a single JSON object: { "executive_summary": "...", "findings": [ ... ] }
 
@@ -39,15 +48,20 @@ Each finding must have this shape:
   "description": "plain-English explanation of the issue",
   "contract_basis": "the relevant contract term/clause that proves this",
   "invoice_evidence": "the relevant invoice line item/amount that proves this",
-  "monthly_impact_usd": number (your best estimate of the recurring monthly $ at stake; 0 if one-time),
-  "one_time_impact_usd": number (for one-time issues like duplicate fees; 0 if recurring),
+  "monthly_impact_usd": number (recurring $ the CUSTOMER CAN RECOVER from a proven overcharge/missed discount; 0 unless there is a quantified excess),
+  "one_time_impact_usd": number (one-time recoverable $, e.g. a duplicate fee or one-off overcharge; 0 otherwise),
   "confidence": "high | medium | low",
   "recommended_action": "what the customer should do to recover this"
 }
 
 Severity guide: "critical" = recurring leakage or a large one-time loss that demands immediate vendor contact; "moderate" = clear money at stake but smaller or needs verification; "minor" = housekeeping or risk that costs nothing yet.
 
-If you find nothing, return { "executive_summary": "...", "findings": [] } with a summary stating the invoices appear consistent with the contract. Do not invent issues that aren't supported by the data — only report what the evidence shows.`;
+IMPACT RULE: the two impact fields are money the customer can RECOVER (a proven overcharge, missed discount, or duplicate). For "Verified"/correct-as-billed findings and for "needs verification" findings, BOTH impacts MUST be 0. Never report a charge's full amount as impact merely because it is missing, unverified, or ambiguous — only an actual quantified excess counts.
+
+ALWAYS SHOW YOUR WORK — do not return an empty audit:
+  - For each substantive charge you reconcile (usage overages, fees, taxes, recurring charges), record a finding even when the charge is CORRECT: use type "other", severity "minor", confidence "high", both dollar impacts 0, and state what you verified with the math (e.g. "Verified: 17,334 color images over the 6,300 covered allowance × $0.056 = $970.70, matches the contract rate."). The customer should see that every charge was checked, not a blank report.
+  - Only label a charge an "overcharge" when the billed amount EXCEEDS the contract-supported amount, and show the excess. Never call a correctly-computed charge an overcharge.
+  - Do not invent terms the contract does not contain. When the contract is silent or ambiguous, raise a "needs verification" finding (severity minor or moderate, impacts 0) rather than asserting a violation.`;
 
 export async function findDiscrepancies(contract, invoices) {
   const result = await chatJSON([

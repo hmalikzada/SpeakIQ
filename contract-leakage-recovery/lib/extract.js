@@ -74,6 +74,9 @@ Return a single JSON object with this shape:
   "pricing": [
     { "item": "string description of the priced item/service", "unit": "e.g. per seat per month", "rate": number, "tier_min": number or null, "tier_max": number or null, "currency": "USD" }
   ],
+  "usage_allowances": [
+    { "item": "e.g. B&W images, Color images, GB of data", "included_per_month": number or null, "excess_rate": number or null, "applies": "pooled across all devices | per device | unclear" }
+  ],
   "escalator_cap_pct": number or null,
   "discounts": [
     { "description": "string", "condition": "string describing when it applies" }
@@ -112,12 +115,19 @@ Return a single JSON object with this shape:
       "amount": number
     }
   ],
+  "meters": [
+    { "device": "equipment/model the meter belongs to, or null", "meter_type": "B&W | Color | other", "begin": number or null, "end": number or null, "total_copies": number or null, "covered": number or null, "billable": number or null, "rate": number or null, "overage_amount": number or null }
+  ],
+  "overage_period": { "start": "YYYY-MM-DD or null", "end": "YYYY-MM-DD or null" },
   "total": number or null
 }
 
 Preserve each line's period and any "balance forward" / "past due" / "current charges" label — these
-distinguish legitimate charges for different months from true duplicates. If quantity/unit_price aren't
-broken out, leave them null but still record "amount".`;
+distinguish legitimate charges for different months from true duplicates. If the invoice has a meter /
+overage detail table (image or copy counts), capture EVERY row in "meters" with all of its numbers
+(begin, end, total, covered, billable, per-unit rate, and the overage amount) exactly as printed — these
+are what let the audit recompute usage overages. If quantity/unit_price aren't broken out, leave them
+null but still record "amount".`;
 
 export async function extractContractTerms(text) {
   return chatJSON([
