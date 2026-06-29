@@ -106,13 +106,16 @@ function buildChargeReviewList(lineReview) {
     const meta = VERDICT_META[r.verdict] || { label: r.verdict || 'Reviewed', cls: 'verify' };
     const row = document.createElement('div');
     row.className = `ledger-row v-${meta.cls}`;
+    const breakdown = Array.isArray(r.breakdown) ? r.breakdown.filter(Boolean) : [];
     row.innerHTML = `
       <div class="ledger-main">
         <span class="ledger-amount">${fmtUsdCents(r.amount)}</span>
         <span class="ledger-desc">${escapeHtml(r.description || '')}</span>
         <span class="ledger-verdict v-${meta.cls}">${escapeHtml(meta.label)}</span>
       </div>
+      ${breakdown.length ? `<ul class="ledger-calc">${breakdown.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ul>` : ''}
       ${r.explanation ? `<p class="ledger-why">${escapeHtml(r.explanation)}</p>` : ''}
+      ${r.verify ? `<p class="ledger-verify"><span>Worth confirming:</span> ${escapeHtml(r.verify)}</p>` : ''}
       ${r.contract_basis ? `<p class="ledger-basis"><span>Contract basis:</span> ${escapeHtml(r.contract_basis)}</p>` : ''}
     `;
     wrap.appendChild(row);

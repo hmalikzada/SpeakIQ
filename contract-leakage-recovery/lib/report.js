@@ -143,7 +143,7 @@ export function buildReportPdf({ contract, findings, lineReview, executiveSummar
     };
 
     lineReview.forEach((r) => {
-      ensureSpace(doc, 64);
+      ensureSpace(doc, 92);
       const [vlabel, vcolor] = VERDICT[r.verdict] || ['Reviewed', SOFT];
       doc
         .font('Helvetica-Bold')
@@ -155,8 +155,14 @@ export function buildReportPdf({ contract, findings, lineReview, executiveSummar
         .fillColor(vcolor)
         .text(`[${vlabel.toUpperCase()}]`, { continued: false });
       doc.font('Helvetica').fontSize(10).fillColor(INK).text(r.description || '');
-      if (r.explanation) doc.font('Helvetica').fontSize(9.5).fillColor(SOFT).text(r.explanation);
-      doc.moveDown(0.45);
+      if (Array.isArray(r.breakdown)) {
+        r.breakdown.filter(Boolean).forEach((s) =>
+          doc.font('Helvetica').fontSize(9.5).fillColor(SOFT).text(`   ${s}`)
+        );
+      }
+      if (r.explanation) doc.font('Helvetica').fontSize(9.5).fillColor(INK).text(r.explanation);
+      if (r.verify) doc.font('Helvetica-Oblique').fontSize(9).fillColor(GOLD).text(`Worth confirming: ${r.verify}`);
+      doc.moveDown(0.5);
     });
   }
 

@@ -63,10 +63,20 @@ IMPACT RULE: the two impact fields are money the customer can RECOVER (a proven 
   "description": "the exact line-item text (prefix with the invoice number when there is more than one invoice)",
   "amount": number,
   "verdict": "correct | overcharge | undercharge | not_in_contract | needs_verification",
-  "explanation": "why this verdict, WITH the math and the governing contract figure (e.g. '17,334 color images over the 6,300 covered allowance × $0.056 = $970.70, which matches the contract excess rate')",
+  "breakdown": ["one short step per array element that SHOWS THE ARITHMETIC so a non-expert can follow it end to end"],
+  "explanation": "1-2 plain-English sentences stating the verdict and what it means for the customer",
+  "verify": "if the verdict rests on an ASSUMPTION (how an allowance is split, how many months are in the period, which rate applies, taxability, etc.), state the assumption and compute the ALTERNATIVE outcome with its dollar difference; otherwise null",
   "contract_basis": "the contract term that governs this charge, or 'no matching contract term'"
 }
-Every dollar on the invoice MUST appear in line_review with a clear verdict and reason — this is the customer-facing proof that each charge was checked, including the ones that are correct.
+The "breakdown" must spell out the calculation step by step — never just the final number. For a usage overage that means: the total units, the covered/free allowance AND how it was derived, the billable units (total − covered), the rate, and the resulting charge. Worked example for a color overage:
+  "breakdown": [
+    "Total color copies this period: 23,634 (258 on the C4510 + 23,376 on the C6010)",
+    "Covered/free allowance: 2,100 per month × 3 months = 6,300",
+    "Billable: 23,634 − 6,300 = 17,334 images",
+    "Charge: 17,334 × $0.056 = $970.70"
+  ],
+  "verify": "This assumes the 2,100/month allowance is POOLED across both copiers. If the contract grants it PER DEVICE (2 machines): covered = 12,600, billable = 11,034, charge = $617.90 — i.e. $352.80 less. Confirm which applies in the contract."
+Every dollar on the invoice MUST appear in line_review with a clear verdict, a step-by-step breakdown, and a reason — this is the customer-facing proof that each charge was checked, including the correct ones.
 
 "findings" are reserved for items that need ATTENTION: overcharges, undercharges, missed discounts, duplicate or unauthorized charges, late/interest beyond terms, allowance/rate/tax questions to verify, and auto-renewal or contract risks. Do NOT add a finding for a charge that is correct as billed — line_review already records it. Only label something an "overcharge" when the billed amount EXCEEDS the contract-supported amount, and show the excess. Do not invent terms the contract does not contain; when the contract is silent or ambiguous, use the "needs_verification" verdict (impacts 0) rather than asserting a violation. If there are no issues, "findings" may be an empty array — the line_review still shows the full reconciliation.`;
 
