@@ -14,45 +14,79 @@
 
   <!-- ── Auth screen (no sidebar) ──────────────────────────── -->
   <div id="auth-screen" class="auth-screen">
-    <div class="auth-brand">
-      <svg width="28" height="28" viewBox="0 0 48 48" fill="none" class="brand-mark-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-        <path d="M24 4L8 11V26C8 35 15.5 42.5 24 45C32.5 42.5 40 35 40 26V11L24 4Z" fill="#16a34a" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
-        <line x1="16" y1="20" x2="32" y2="20" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="16" y1="24" x2="32" y2="24" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="16" y1="28" x2="26" y2="28" stroke="#22c55e" stroke-width="1.4" stroke-linecap="round" opacity="0.75"/>
-        <line x1="16" y1="32" x2="30" y2="32" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
-        <line class="logo-scan" x1="14" y1="17" x2="34" y2="17" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-      ClauseGuard
-    </div>
-    <div class="auth-intro">
-      <h2>Find the money hiding in your vendor contracts</h2>
-      <p class="auth-pitch"><strong>Every year, companies pay thousands in junk and hidden fees.</strong> These are charges slipped onto invoices that were never part of the vendor's contract, and they almost never get caught. Until now. ClauseGuard reads every clause and checks every line item to surface the fees you're quietly paying for.</p>
-      <p>Sign in to run an audit, or create a free account to get started.</p>
-    </div>
-    <div class="auth-card">
-      <div class="auth-tabs" role="tablist">
-        <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
-        <button type="button" class="auth-tab" data-auth="register">Create account</button>
+    <div class="auth-grid">
+
+      <!-- Left: hero / value proposition -->
+      <div class="auth-hero">
+        <div class="auth-brand">
+          <svg width="28" height="28" viewBox="0 0 48 48" fill="none" class="brand-mark-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4L8 11V26C8 35 15.5 42.5 24 45C32.5 42.5 40 35 40 26V11L24 4Z" fill="#16a34a" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
+            <line x1="16" y1="20" x2="32" y2="20" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="16" y1="24" x2="32" y2="24" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="16" y1="28" x2="26" y2="28" stroke="#22c55e" stroke-width="1.4" stroke-linecap="round" opacity="0.75"/>
+            <line x1="16" y1="32" x2="30" y2="32" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
+            <line class="logo-scan" x1="14" y1="17" x2="34" y2="17" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          ClauseGuard
+        </div>
+
+        <h1 class="auth-headline">Stop paying vendor fees your contracts <span>never approved</span>.</h1>
+        <p class="auth-subhead">ClauseGuard reads your vendor contracts, amendments, and invoices, then flags the hidden charges, billing mismatches, and overcharges you're quietly paying for.</p>
+
+        <ul class="auth-benefits">
+          <li>Find junk and hidden fees in minutes</li>
+          <li>Reconcile every invoice against the contract</li>
+          <li>Export audit-ready findings</li>
+        </ul>
+
+        <!-- Signature: sample finding preview -->
+        <div class="auth-preview" aria-hidden="true">
+          <div class="preview-head">
+            <span class="preview-stamp">Sample finding</span>
+            <span class="preview-risk">High risk</span>
+          </div>
+          <div class="preview-amount">$14,280<span>in questionable vendor fees</span></div>
+          <div class="preview-rows">
+            <div class="preview-row"><span class="pr-label">Contract says</span><span class="pr-val ok">Included, no charge</span></div>
+            <div class="preview-row"><span class="pr-label">Invoice shows</span><span class="pr-val bad">Charged separately</span></div>
+          </div>
+        </div>
+
+        <div class="auth-trust">
+          <span>&#128274; Private document processing</span>
+          <span>&#10003; No card required</span>
+          <span>&#9670; Built for finance &amp; legal teams</span>
+        </div>
       </div>
-      <form id="auth-form" class="auth-form">
-        <label class="auth-label reg-only hidden" for="auth-name">Full name
-          <input type="text" id="auth-name" autocomplete="name" disabled />
-        </label>
-        <label class="auth-label reg-only hidden" for="auth-company">Company
-          <span class="opt-tag">optional</span>
-          <input type="text" id="auth-company" autocomplete="organization" disabled />
-        </label>
-        <label class="auth-label" for="auth-email">Email
-          <input type="email" id="auth-email" autocomplete="email" required />
-        </label>
-        <label class="auth-label" for="auth-password">Password
-          <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required />
-        </label>
-        <button type="submit" id="auth-submit" class="btn primary">Sign in</button>
-        <p id="auth-error" class="auth-error" role="alert"></p>
-      </form>
-      <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
+
+      <!-- Right: sign in / create account -->
+      <div class="auth-panel">
+        <div class="auth-card">
+          <div class="auth-tabs" role="tablist">
+            <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
+            <button type="button" class="auth-tab" data-auth="register">Create account</button>
+          </div>
+          <form id="auth-form" class="auth-form">
+            <label class="auth-label reg-only hidden" for="auth-name">Full name
+              <input type="text" id="auth-name" autocomplete="name" disabled />
+            </label>
+            <label class="auth-label reg-only hidden" for="auth-company">Company
+              <span class="opt-tag">optional</span>
+              <input type="text" id="auth-company" autocomplete="organization" disabled />
+            </label>
+            <label class="auth-label" for="auth-email">Email
+              <input type="email" id="auth-email" autocomplete="email" required />
+            </label>
+            <label class="auth-label" for="auth-password">Password
+              <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required />
+            </label>
+            <button type="submit" id="auth-submit" class="btn primary">Sign in</button>
+            <p id="auth-error" class="auth-error" role="alert"></p>
+          </form>
+          <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
+        </div>
+      </div>
+
     </div>
   </div>
 
