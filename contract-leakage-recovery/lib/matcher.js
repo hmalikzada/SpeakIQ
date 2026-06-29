@@ -30,7 +30,7 @@ CRITICAL RECONCILIATION RULES — apply these before flagging anything:
      - billable = max(0, total_copies − covered). Check that the invoice's "covered" equals the contract's included allowance × the number of months in the overage/billing period (e.g. a 2,100/month color allowance over a 3-month overage period = 6,300 covered).
      - expected_overage = billable × the contract's excess rate for that meter type. Compare to the billed overage and flag ONLY the excess if billed > expected.
      - Verify the invoice's per-unit RATE equals the contract's excess rate to the exact figure (e.g. $0.056). Flag even a fraction-of-a-cent difference — across thousands of images, $0.001 is real money.
-     - If the contract's allowance is PER DEVICE but the invoice pools it across devices (or vice-versa), that changes the covered count and the bill — raise it as a point to verify with the estimated dollar impact.
+     - Size the covered allowance from the contract's usage_allowances "applies": if "pooled across all devices", covered = allowance × months (ONE shared pool for all machines); if "per device", covered = allowance × number of devices × months. Apply whatever the contract specifies and mark the charge CORRECT when it matches. Raise a pooled-vs-per-device "verify" note ONLY when the contract is genuinely silent ("applies" = "unclear") — do NOT raise it when the contract resolves the question (e.g. it states one combined allowance for the whole "System").
      - Pool meters of the same type across devices the way the invoice does, and show every step of the arithmetic in "description".
 
 SENSITIVITY — catch the small things, not just the large ones:
@@ -65,7 +65,7 @@ IMPACT RULE: the two impact fields are money the customer can RECOVER (a proven 
   "verdict": "correct | overcharge | undercharge | not_in_contract | needs_verification",
   "breakdown": ["one short step per array element that SHOWS THE ARITHMETIC so a non-expert can follow it end to end"],
   "explanation": "1-2 plain-English sentences stating the verdict and what it means for the customer",
-  "verify": "if the verdict rests on an ASSUMPTION (how an allowance is split, how many months are in the period, which rate applies, taxability, etc.), state the assumption and compute the ALTERNATIVE outcome with its dollar difference; otherwise null",
+  "verify": "ONLY when the verdict depends on something the CONTRACT itself does not resolve (a genuinely ambiguous allowance split, an unstated period length, an unclear rate, taxability the contract is silent on, etc.): state the open question and compute the ALTERNATIVE outcome with its dollar difference. If the contract DOES resolve it (e.g. it states one pooled allowance for the whole System), apply that, mark the charge correct, and set verify to null — do not raise a settled question.",
   "contract_basis": "the contract term that governs this charge, or 'no matching contract term'"
 }
 The "breakdown" must spell out the calculation step by step — never just the final number. For a usage overage that means: the total units, the covered/free allowance AND how it was derived, the billable units (total − covered), the rate, and the resulting charge. Worked example for a color overage:

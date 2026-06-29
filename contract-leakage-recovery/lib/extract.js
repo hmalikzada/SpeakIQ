@@ -92,6 +92,8 @@ Return a single JSON object with this shape:
   "notes": "any other clause that could affect whether an invoice is correct"
 }
 
+For usage_allowances "applies": if the contract states a SINGLE combined allowance, treats multiple machines as one "System" or "Equipment", or bundles ONE base payment covering all the devices, set it to "pooled across all devices". Set "per device" ONLY when the contract explicitly grants a separate allowance to each unit. Use "unclear" only when the contract genuinely does not say.
+
 Use null where a field is not present in the contract. Quote or closely paraphrase the source clauses so they can be cited as evidence later.`;
 
 const INVOICE_SYSTEM_PROMPT = `You are an invoice parsing assistant for a financial audit tool.
