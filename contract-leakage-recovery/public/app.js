@@ -86,6 +86,40 @@ runAnotherBtn.addEventListener('click', () => showView('new-audit'));
 const fmtUsd = (n) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
 
+// Exact-cents formatter for the charge-by-charge ledger (each billed dollar).
+const fmtUsdCents = (n) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0);
+
+const VERDICT_META = {
+  correct: { label: 'Correct', cls: 'correct' },
+  overcharge: { label: 'Overcharge', cls: 'over' },
+  undercharge: { label: 'Undercharge', cls: 'under' },
+  not_in_contract: { label: 'Not in contract', cls: 'over' },
+  needs_verification: { label: 'Verify', cls: 'verify' },
+};
+
+// Builds the "every charge, reconciled" ledger element from a line_review array.
+function buildChargeReviewList(lineReview) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ledger';
+  for (const r of lineReview || []) {
+    const meta = VERDICT_META[r.verdict] || { label: r.verdict || 'Reviewed', cls: 'verify' };
+    const row = document.createElement('div');
+    row.className = `ledger-row v-${meta.cls}`;
+    row.innerHTML = `
+      <div class="ledger-main">
+        <span class="ledger-amount">${fmtUsdCents(r.amount)}</span>
+        <span class="ledger-desc">${escapeHtml(r.description || '')}</span>
+        <span class="ledger-verdict v-${meta.cls}">${escapeHtml(meta.label)}</span>
+      </div>
+      ${r.explanation ? `<p class="ledger-why">${escapeHtml(r.explanation)}</p>` : ''}
+      ${r.contract_basis ? `<p class="ledger-basis"><span>Contract basis:</span> ${escapeHtml(r.contract_basis)}</p>` : ''}
+    `;
+    wrap.appendChild(row);
+  }
+  return wrap;
+}
+
 function initialsFor(user) {
   const src = (user.name || user.email || '').trim();
   if (!src) return '··';
@@ -371,9 +405,22 @@ function renderResults(data) {
     }
   }
 
+  renderChargeReview(data.lineReview);
   renderLegal(legal);
 
   results.classList.remove('hidden');
+}
+
+function renderChargeReview(lineReview) {
+  const section = document.getElementById('charge-review');
+  const list = document.getElementById('charge-review-list');
+  list.innerHTML = '';
+  if (!lineReview || lineReview.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  list.appendChild(buildChargeReviewList(lineReview));
+  section.classList.remove('hidden');
 }
 
 const STATUS_LABELS = {
@@ -575,6 +622,14 @@ function buildVendorCard(group, index) {
     body.appendChild(buildMemo(group));
     body.appendChild(buildSummaryGrid(group.summary));
     body.appendChild(buildFindingsSection(group.findings));
+    if ((group.lineReview || []).length) {
+      const lr = document.createElement('div');
+      const h = document.createElement('h2');
+      h.className = 'findings-title';
+      h.textContent = 'Every charge, reconciled';
+      lr.append(h, buildChargeReviewList(group.lineReview));
+      body.appendChild(lr);
+    }
     const legalEl = buildLegalSection(group.legal);
     if (legalEl) body.appendChild(legalEl);
   }

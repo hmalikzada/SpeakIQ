@@ -16,6 +16,11 @@ const fmtUsd = (n) =>
     Number(n) || 0
   );
 
+const fmtUsdCents = (n) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    Number(n) || 0
+  );
+
 const SEVERITY_COLOR = { critical: RED, moderate: GOLD, minor: GREEN };
 
 const STATUS_LABELS = {
@@ -26,7 +31,7 @@ const STATUS_LABELS = {
   unclear: 'Status unclear',
 };
 
-export function buildReportPdf({ contract, findings, executiveSummary, legal, summary }) {
+export function buildReportPdf({ contract, findings, lineReview, executiveSummary, legal, summary }) {
   const doc = new PDFDocument({ size: 'LETTER', margin: 54 });
 
   // ── Header ───────────────────────────────────────────────
@@ -115,6 +120,43 @@ export function buildReportPdf({ contract, findings, executiveSummary, legal, su
       labelValue(doc, 'Recommended action', f.recommended_action);
 
       doc.moveDown(0.6);
+    });
+  }
+
+  // ── Charge-by-charge review (the full ledger) ───────────
+  if (lineReview && lineReview.length) {
+    hr(doc);
+    sectionTitle(doc, 'Charge-by-Charge Review');
+    doc
+      .font('Helvetica')
+      .fontSize(9.5)
+      .fillColor(SOFT)
+      .text('Every dollar billed, checked line by line against the contract.');
+    doc.moveDown(0.4);
+
+    const VERDICT = {
+      correct: ['Correct', GREEN],
+      overcharge: ['Overcharge', RED],
+      undercharge: ['Undercharge', GOLD],
+      not_in_contract: ['Not in contract', RED],
+      needs_verification: ['Verify', GOLD],
+    };
+
+    lineReview.forEach((r) => {
+      ensureSpace(doc, 64);
+      const [vlabel, vcolor] = VERDICT[r.verdict] || ['Reviewed', SOFT];
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(11)
+        .fillColor(INK)
+        .text(`${fmtUsdCents(r.amount)}   `, { continued: true })
+        .font('Helvetica-Bold')
+        .fontSize(8.5)
+        .fillColor(vcolor)
+        .text(`[${vlabel.toUpperCase()}]`, { continued: false });
+      doc.font('Helvetica').fontSize(10).fillColor(INK).text(r.description || '');
+      if (r.explanation) doc.font('Helvetica').fontSize(9.5).fillColor(SOFT).text(r.explanation);
+      doc.moveDown(0.45);
     });
   }
 

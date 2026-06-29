@@ -36,7 +36,7 @@ CRITICAL RECONCILIATION RULES — apply these before flagging anything:
 SENSITIVITY — catch the small things, not just the large ones:
   - Scrutinise per-unit rate differences, meter/quantity mismatches, math errors of even a few dollars, taxes or surcharges applied to items that may not be taxable, rounding, and any line item whose amount you cannot fully tie to a contract term. Size severity by dollar impact (small = "minor"), but never skip a discrepancy just because it is small.
 
-Return a single JSON object: { "executive_summary": "...", "findings": [ ... ] }
+Return a single JSON object: { "executive_summary": "...", "findings": [ ... ], "line_review": [ ... ] }
 
 "executive_summary" is a 2-4 sentence professional audit memo paragraph, written in the voice of a senior auditor addressing the client's CFO: what was reviewed, the headline dollar exposure, and the single most urgent action. Be specific with names and numbers.
 
@@ -58,10 +58,17 @@ Severity guide: "critical" = recurring leakage or a large one-time loss that dem
 
 IMPACT RULE: the two impact fields are money the customer can RECOVER (a proven overcharge, missed discount, or duplicate). For "Verified"/correct-as-billed findings and for "needs verification" findings, BOTH impacts MUST be 0. Never report a charge's full amount as impact merely because it is missing, unverified, or ambiguous — only an actual quantified excess counts.
 
-ALWAYS SHOW YOUR WORK — do not return an empty audit:
-  - For each substantive charge you reconcile (usage overages, fees, taxes, recurring charges), record a finding even when the charge is CORRECT: use type "other", severity "minor", confidence "high", both dollar impacts 0, and state what you verified with the math (e.g. "Verified: 17,334 color images over the 6,300 covered allowance × $0.056 = $970.70, matches the contract rate."). The customer should see that every charge was checked, not a blank report.
-  - Only label a charge an "overcharge" when the billed amount EXCEEDS the contract-supported amount, and show the excess. Never call a correctly-computed charge an overcharge.
-  - Do not invent terms the contract does not contain. When the contract is silent or ambiguous, raise a "needs verification" finding (severity minor or moderate, impacts 0) rather than asserting a violation.`;
+"line_review" — THE LEDGER. Reconcile EVERY billed line item across all invoices, correct ones included, accounting for every dollar charged (base/recurring charges, usage overages, late fees, interest, taxes, surcharges, credits). One entry per charge:
+{
+  "description": "the exact line-item text (prefix with the invoice number when there is more than one invoice)",
+  "amount": number,
+  "verdict": "correct | overcharge | undercharge | not_in_contract | needs_verification",
+  "explanation": "why this verdict, WITH the math and the governing contract figure (e.g. '17,334 color images over the 6,300 covered allowance × $0.056 = $970.70, which matches the contract excess rate')",
+  "contract_basis": "the contract term that governs this charge, or 'no matching contract term'"
+}
+Every dollar on the invoice MUST appear in line_review with a clear verdict and reason — this is the customer-facing proof that each charge was checked, including the ones that are correct.
+
+"findings" are reserved for items that need ATTENTION: overcharges, undercharges, missed discounts, duplicate or unauthorized charges, late/interest beyond terms, allowance/rate/tax questions to verify, and auto-renewal or contract risks. Do NOT add a finding for a charge that is correct as billed — line_review already records it. Only label something an "overcharge" when the billed amount EXCEEDS the contract-supported amount, and show the excess. Do not invent terms the contract does not contain; when the contract is silent or ambiguous, use the "needs_verification" verdict (impacts 0) rather than asserting a violation. If there are no issues, "findings" may be an empty array — the line_review still shows the full reconciliation.`;
 
 export async function findDiscrepancies(contract, invoices) {
   const result = await chatJSON([
@@ -75,6 +82,7 @@ export async function findDiscrepancies(contract, invoices) {
   return {
     executiveSummary: typeof result.executive_summary === 'string' ? result.executive_summary : '',
     findings: Array.isArray(result.findings) ? result.findings : [],
+    lineReview: Array.isArray(result.line_review) ? result.line_review : [],
   };
 }
 

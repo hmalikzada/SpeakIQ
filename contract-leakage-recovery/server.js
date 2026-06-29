@@ -476,12 +476,12 @@ app.get('/api/audits/:id', requireDb, requireAuth, async (req, res) => {
 // ── /api/report — render an analysis result as a PDF audit report ──
 app.post('/api/report', requireAuth, sameOrigin, (req, res) => {
   try {
-    const { contract, findings, executiveSummary, legal, summary } = req.body || {};
+    const { contract, findings, lineReview, executiveSummary, legal, summary } = req.body || {};
     if (!summary) {
       return res.status(400).json({ error: 'Missing analysis result.' });
     }
 
-    const doc = buildReportPdf({ contract, findings, executiveSummary, legal, summary });
+    const doc = buildReportPdf({ contract, findings, lineReview, executiveSummary, legal, summary });
 
     const vendor = (contract?.vendor || 'vendor').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
     res.setHeader('Content-Type', 'application/pdf');

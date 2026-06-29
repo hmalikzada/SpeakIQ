@@ -13,11 +13,11 @@ export async function runAudit(contractText, invoiceTexts) {
     invoices.push(await extractInvoice(text));
   }
 
-  const [{ executiveSummary, findings }, legal] = await Promise.all([
+  const [{ executiveSummary, findings, lineReview }, legal] = await Promise.all([
     findDiscrepancies(contract, invoices),
     legalAdvisory(contract, invoices),
   ]);
   const summary = summarize(findings);
 
-  return { contract, invoices, findings, executiveSummary, legal, summary };
+  return { contract, invoices, findings, lineReview, executiveSummary, legal, summary };
 }
