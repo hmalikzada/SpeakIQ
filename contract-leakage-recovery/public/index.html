@@ -14,57 +14,32 @@
 
   <!-- ── Auth screen (no sidebar) ──────────────────────────── -->
   <div id="auth-screen" class="auth-screen">
+    <header class="auth-top">
+      <div class="auth-brand">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none" class="brand-mark-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4L8 11V26C8 35 15.5 42.5 24 45C32.5 42.5 40 35 40 26V11L24 4Z" fill="#16a34a" fill-opacity="0.16" stroke="#178a5b" stroke-width="1.6"/>
+          <line x1="16" y1="20" x2="32" y2="20" stroke="#6e7b73" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="16" y1="24" x2="32" y2="24" stroke="#6e7b73" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="16" y1="28" x2="26" y2="28" stroke="#1FAE73" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16" y1="32" x2="30" y2="32" stroke="#6e7b73" stroke-width="1.2" stroke-linecap="round"/>
+          <line class="logo-scan" x1="14" y1="17" x2="34" y2="17" stroke="#1FAE73" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        ClauseGuard
+      </div>
+      <div class="auth-tagline">The financial X&#8209;ray for vendor contracts</div>
+    </header>
+
     <div class="auth-grid">
 
-      <!-- Left: hero / value proposition -->
+      <!-- Left: promise + sign in -->
       <div class="auth-hero">
-        <div class="auth-brand">
-          <svg width="28" height="28" viewBox="0 0 48 48" fill="none" class="brand-mark-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-            <path d="M24 4L8 11V26C8 35 15.5 42.5 24 45C32.5 42.5 40 35 40 26V11L24 4Z" fill="#16a34a" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
-            <line x1="16" y1="20" x2="32" y2="20" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="16" y1="24" x2="32" y2="24" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="16" y1="28" x2="26" y2="28" stroke="#22c55e" stroke-width="1.4" stroke-linecap="round" opacity="0.75"/>
-            <line x1="16" y1="32" x2="30" y2="32" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
-            <line class="logo-scan" x1="14" y1="17" x2="34" y2="17" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-          ClauseGuard
-        </div>
+        <h1 class="auth-headline">Find the fees your vendors <span>hope you never notice.</span></h1>
+        <p class="auth-subhead">ClauseGuard puts your contracts, amendments, and invoices under a financial X&#8209;ray to uncover hidden charges, billing mismatches, and savings opportunities.</p>
 
-        <h1 class="auth-headline">Stop paying vendor fees your contracts <span>never approved</span>.</h1>
-        <p class="auth-subhead">ClauseGuard reads your vendor contracts, amendments, and invoices, then flags the hidden charges, billing mismatches, and overcharges you're quietly paying for.</p>
-
-        <ul class="auth-benefits">
-          <li>Find junk and hidden fees in minutes</li>
-          <li>Reconcile every invoice against the contract</li>
-          <li>Export audit-ready findings</li>
-        </ul>
-
-        <!-- Signature: sample finding preview -->
-        <div class="auth-preview" aria-hidden="true">
-          <div class="preview-head">
-            <span class="preview-stamp">Sample finding</span>
-            <span class="preview-risk">High risk</span>
-          </div>
-          <div class="preview-amount">$14,280<span>in questionable vendor fees</span></div>
-          <div class="preview-rows">
-            <div class="preview-row"><span class="pr-label">Contract says</span><span class="pr-val ok">Included, no charge</span></div>
-            <div class="preview-row"><span class="pr-label">Invoice shows</span><span class="pr-val bad">Charged separately</span></div>
-          </div>
-        </div>
-
-        <div class="auth-trust">
-          <span>&#128274; Private document processing</span>
-          <span>&#10003; No card required</span>
-          <span>&#9670; Built for finance &amp; legal teams</span>
-        </div>
-      </div>
-
-      <!-- Right: sign in / create account -->
-      <div class="auth-panel">
         <div class="auth-card">
           <div class="auth-tabs" role="tablist">
             <button type="button" class="auth-tab active" data-auth="login">Sign in</button>
-            <button type="button" class="auth-tab" data-auth="register">Create account</button>
+            <button type="button" class="auth-tab" data-auth="register">Run your first audit</button>
           </div>
           <form id="auth-form" class="auth-form">
             <label class="auth-label reg-only hidden" for="auth-name">Full name
@@ -83,7 +58,54 @@
             <button type="submit" id="auth-submit" class="btn primary">Sign in</button>
             <p id="auth-error" class="auth-error" role="alert"></p>
           </form>
-          <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
+          <p class="auth-hint">No card required &#183; 5 free audits every month.</p>
+        </div>
+
+        <div class="auth-trust">
+          <span>&#10003; No card required</span>
+          <span>&#128274; Private document processing</span>
+          <span>&#9670; Built for finance &amp; legal teams</span>
+        </div>
+      </div>
+
+      <!-- Right: the Contract X-Ray showcase -->
+      <div class="auth-show" aria-hidden="true">
+        <div class="xray">
+          <div class="xray-head">
+            <span class="xray-stamp"><span class="xray-dot"></span> Live audit</span>
+            <span class="xray-vendor">Acme Print Services</span>
+          </div>
+          <div class="xray-docs">
+            <article class="xdoc">
+              <div class="xdoc-tab">Contract</div>
+              <div class="xline"></div>
+              <div class="xline short"></div>
+              <div class="xrow"><span class="xrow-label">Premium support</span><span class="xtag ok">Included</span></div>
+              <div class="xline"></div>
+              <div class="xline short"></div>
+            </article>
+            <article class="xdoc">
+              <div class="xdoc-tab">Invoice</div>
+              <div class="xline"></div>
+              <div class="xrow"><span class="xrow-label">Premium support fee</span><span class="xamt flag">$3,200</span></div>
+              <div class="xline short"></div>
+              <div class="xline"></div>
+            </article>
+            <div class="xray-scan"></div>
+          </div>
+          <div class="xray-finding">
+            <span class="xf-icon">!</span>
+            <div class="xf-text">
+              <div class="xf-title">Potential overcharge detected</div>
+              <div class="xf-sub">Contract says included; the invoice charged $3,200.</div>
+            </div>
+            <div class="xf-amount">$14,280<span>per year at risk</span></div>
+          </div>
+          <div class="xray-chips">
+            <span class="xchip">Clause mismatch</span>
+            <span class="xchip">Charge not authorized</span>
+            <span class="xchip">Renegotiation opportunity</span>
+          </div>
         </div>
       </div>
 
