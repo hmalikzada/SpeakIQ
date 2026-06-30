@@ -165,8 +165,7 @@ body.logged-out { background: #f7f3ea; }
   align-items: center;
   gap: 9px;
 }
-.brand-mark-svg { flex-shrink: 0; display: inline-block; vertical-align: middle; }
-.auth-brand .brand-mark-svg { filter: none; }
+.brand-mark-svg { flex-shrink: 0; display: inline-block; vertical-align: middle; filter: drop-shadow(0 0 6px rgba(200,162,60,0.35)); }
 .auth-tagline {
   font-size: 12px;
   font-weight: 700;
