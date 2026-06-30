@@ -5,36 +5,42 @@
 :root {
   --sidebar-width: 240px;
 
-  --bg-deep:       #0a0a0a;
-  --bg-sidebar:    #111111;
-  --bg-main:       #141414;
-  --bg-card:       #1a1a1a;
-  --bg-card-hover: #1f1f1f;
+  /* Warm "document desk" theme (light) with gold accents */
+  --bg-deep:       #ece4d4;
+  --bg-sidebar:    #10231f;   /* deep green-black chrome */
+  --bg-main:       #f7f3ea;   /* warm paper */
+  --bg-card:       #fffdf8;   /* cream card */
+  --bg-card-hover: #f3eede;
 
-  --green:         #22c55e;
-  --green-action:  #16a34a;
-  --green-hover:   #15803d;
-  --green-tint:    rgba(34,197,94,0.08);
-  --green-border:  rgba(34,197,94,0.20);
-  --green-glow-sm: 0 0 16px rgba(34,197,94,0.30);
-  --green-glow-md: 0 0 28px rgba(34,197,94,0.18);
-  --green-glow-lg: 0 0 48px rgba(34,197,94,0.12);
-  --brand-glow: 0 0 14px rgba(34,197,94,0.50);
+  --green:         #1fae73;   /* emerald */
+  --green-action:  #178a5b;
+  --green-hover:   #136f49;
+  --green-tint:    rgba(31,174,115,0.10);
+  --green-border:  rgba(31,174,115,0.26);
+  --green-glow-sm: 0 1px 2px rgba(16,35,31,0.10);
+  --green-glow-md: 0 10px 26px -12px rgba(16,35,31,0.22);
+  --green-glow-lg: 0 20px 44px -18px rgba(16,35,31,0.20);
+  --brand-glow: none;
 
-  --text:          #e5e7eb;
-  --text-dim:      #9ca3af;
-  --text-faint:    #4b5563;
+  --gold:          #c8a23c;
+  --gold-deep:     #9a7b1f;
+  --gold-soft:     rgba(200,162,60,0.14);
+  --gold-border:   rgba(200,162,60,0.42);
 
-  --danger:        #fb7185;
-  --danger-glow:   0 0 12px rgba(251,113,133,0.35);
-  --danger-bg: rgba(251,113,133,0.08);
-  --danger-border: rgba(251,113,133,0.30);
-  --amber:         #fbbf24;
-  --border:        rgba(255,255,255,0.07);
-  --border-strong: rgba(255,255,255,0.12);
+  --text:          #10231f;   /* ink */
+  --text-dim:      #51625a;
+  --text-faint:    #8a958c;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --danger:        #c0392b;
+  --danger-glow:   none;
+  --danger-bg:     rgba(192,57,43,0.08);
+  --danger-border: rgba(192,57,43,0.26);
+  --amber:         #d99a25;
+  --border:        rgba(16,35,31,0.09);
+  --border-strong: rgba(16,35,31,0.15);
+
+  --shadow-sm: 0 1px 3px rgba(16,35,31,0.08);
+  --shadow-md: 0 12px 30px -14px rgba(16,35,31,0.22);
 
   --radius:    10px;
   --radius-sm: 8px;
@@ -166,7 +172,7 @@ body.logged-out { background: #f7f3ea; }
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--emerald-d);
+  color: var(--gold-deep);
 }
 
 .auth-grid {
@@ -307,6 +313,7 @@ body.logged-out { background: #f7f3ea; }
   position: relative;
   background: radial-gradient(125% 80% at 80% 0%, #16322b 0%, #10231f 62%);
   border: 1px solid #0a1714;
+  border-top: 2px solid var(--gold);
   border-radius: 20px;
   padding: clamp(18px, 2vw, 26px);
   box-shadow: 0 44px 80px -30px rgba(16, 35, 31, 0.6);
@@ -555,6 +562,17 @@ body.logged-out { background: #f7f3ea; }
 .sidebar-credit span {
   color: var(--text-dim);
 }
+
+/* Deep green-black sidebar on the warm theme: light text + accents */
+.sidebar { border-right: 1px solid rgba(255, 255, 255, 0.07); }
+.sidebar-brand { color: #f1f5f2; border-bottom-color: rgba(255, 255, 255, 0.08); }
+.nav-item { color: #a7b8af; }
+.nav-item:hover { background: rgba(255, 255, 255, 0.06); color: #f1f5f2; }
+.nav-item.active { background: rgba(31, 174, 115, 0.16); color: #5fe0a8; text-shadow: none; }
+.nav-item.active::before { background: var(--green); box-shadow: 0 0 8px rgba(31, 174, 115, 0.7); }
+.sidebar-footer { border-top-color: rgba(255, 255, 255, 0.08); }
+.sidebar-credit { color: rgba(241, 245, 242, 0.42); }
+.sidebar-credit span { color: rgba(241, 245, 242, 0.68); }
 
 .sidebar-user {
   display: flex;
@@ -1342,9 +1360,9 @@ body.logged-out { background: #f7f3ea; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--green);
-  background: var(--green-tint);
-  border: 1px solid var(--green-border);
+  color: var(--gold-deep);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
   border-radius: 999px;
   padding: 4px 11px;
 }
@@ -1388,13 +1406,13 @@ body.logged-out { background: #f7f3ea; }
 }
 
 .metric.accent {
-  background: var(--green-action);
-  border-color: var(--green-hover);
-  box-shadow: var(--shadow-sm), 0 0 24px rgba(22,163,74,0.3);
+  background: linear-gradient(150deg, #d4ad44 0%, var(--gold) 55%, #b88f2c 100%);
+  border-color: var(--gold-deep);
+  box-shadow: var(--shadow-sm), 0 12px 26px -12px rgba(154,123,31,0.55);
 }
 
 .metric.accent .metric-label,
-.metric.accent .metric-value { color: #fff; }
+.metric.accent .metric-value { color: #2a2207; }
 
 .metric-label {
   font-size: 11px;
@@ -1849,10 +1867,14 @@ body.logged-out { background: #f7f3ea; }
   align-items: center;
   gap: 32px;
   padding: 28px 32px;
-  background: linear-gradient(135deg, #0d1f0d 0%, #0a0a0a 60%);
-  border-bottom: 1px solid var(--border);
+  background: radial-gradient(120% 90% at 6% 50%, #16322b 0%, #10231f 62%);
+  border: 1px solid #0a1714;
+  border-top: 2px solid var(--gold);
+  border-radius: 16px;
+  margin-bottom: 28px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-md);
 }
 
 .dashboard-hero::before {
@@ -1861,8 +1883,8 @@ body.logged-out { background: #f7f3ea; }
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(55% 80% at 5% 50%, rgba(22,163,74,0.18), transparent 60%),
-    radial-gradient(35% 55% at 85% 20%, rgba(34,197,94,0.08), transparent 60%);
+    radial-gradient(55% 80% at 5% 50%, rgba(31,174,115,0.18), transparent 60%),
+    radial-gradient(35% 55% at 85% 20%, rgba(31,174,115,0.08), transparent 60%);
   pointer-events: none;
 }
 
@@ -1994,14 +2016,14 @@ body.logged-out { background: #f7f3ea; }
   font-family: var(--display);
   font-size: 18px;
   font-weight: 700;
-  color: var(--text);
+  color: #f1f5f2;
   margin-bottom: 6px;
   line-height: 1.3;
 }
 
 .hero-sub {
   font-size: 13px;
-  color: var(--text-dim);
+  color: #9fb0a8;
   line-height: 1.5;
   margin-bottom: 16px;
   max-width: 400px;
@@ -2034,7 +2056,7 @@ body.logged-out { background: #f7f3ea; }
 
 .hero-stat-label {
   font-size: 10px;
-  color: var(--text-dim);
+  color: #8fa39b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
