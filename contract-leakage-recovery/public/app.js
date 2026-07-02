@@ -333,7 +333,7 @@ function renderResults(data) {
     executiveSummary || 'Analysis complete. See the detailed findings below.';
   animateValue(document.getElementById('sum-monthly'), summary.totalMonthlyImpactUsd, fmtUsd);
   animateValue(document.getElementById('sum-annual'), summary.totalAnnualImpactUsd, fmtUsd);
-  animateValue(document.getElementById('sum-fee'), summary.suggestedFeeUsd, fmtUsd);
+  animateValue(document.getElementById('sum-onetime'), summary.totalOneTimeImpactUsd, fmtUsd);
   animateValue(document.getElementById('sum-count'), summary.findingCount, (n) => String(Math.round(n)));
 
   findingsList.innerHTML = '';
@@ -346,8 +346,9 @@ function renderResults(data) {
     const sorted = [...findings].sort(
       (a, b) => (order[a.severity] ?? 3) - (order[b.severity] ?? 3)
     );
+    const ctx = { vendor: data.contract?.vendor, contract: data.contract };
     for (const f of sorted) {
-      findingsList.appendChild(renderFinding(f));
+      findingsList.appendChild(renderFinding(f, ctx));
     }
   }
 
@@ -417,7 +418,7 @@ function renderLegal(legal) {
   section.classList.remove('hidden');
 }
 
-function renderFinding(f) {
+function renderFinding(f, ctx = {}) {
   const severity = ['critical', 'moderate', 'minor'].includes(f.severity) ? f.severity : 'minor';
   const impact = (f.monthly_impact_usd || 0) > 0
     ? `${fmtUsd(f.monthly_impact_usd)}/mo`
@@ -451,7 +452,82 @@ function renderFinding(f) {
       ${escapeHtml(f.recommended_action || '—')}
     </div>
   `;
+
+  // Dispute-letter tool: turn the finding into a ready-to-send vendor email.
+  const tools = document.createElement('div');
+  tools.className = 'finding-tools';
+  const draftBtn = document.createElement('button');
+  draftBtn.type = 'button';
+  draftBtn.className = 'btn ghost btn-small';
+  draftBtn.textContent = '✉ Draft dispute email';
+  const panel = document.createElement('div');
+  panel.className = 'dispute-panel hidden';
+  draftBtn.addEventListener('click', () => toggleDisputeLetter(f, ctx, draftBtn, panel));
+  tools.appendChild(draftBtn);
+  el.append(tools, panel);
+
   return el;
+}
+
+async function toggleDisputeLetter(finding, ctx, btn, panel) {
+  // Already drafted once — just show/hide it.
+  if (panel.dataset.loaded) {
+    panel.classList.toggle('hidden');
+    btn.textContent = panel.classList.contains('hidden') ? '✉ Draft dispute email' : 'Hide dispute email';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Drafting…';
+
+  try {
+    const res = await fetch('/api/dispute-letter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendor: ctx.vendor, contract: ctx.contract, finding }),
+    });
+    const data = await res.json();
+    if (res.status === 401) {
+      showAuth();
+      throw new Error('Your session expired. Please sign in again.');
+    }
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+
+    const note = document.createElement('p');
+    note.className = 'dispute-note';
+    note.textContent = 'AI-drafted from this finding — review and edit before sending.';
+
+    const text = document.createElement('textarea');
+    text.className = 'dispute-text';
+    text.value = data.letter || '';
+    text.rows = Math.min(18, Math.max(8, text.value.split('\n').length + 1));
+    text.setAttribute('aria-label', 'Draft dispute email');
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn primary btn-small';
+    copyBtn.textContent = 'Copy to clipboard';
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(text.value);
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => (copyBtn.textContent = 'Copy to clipboard'), 2000);
+      } catch {
+        text.select();
+        document.execCommand('copy');
+      }
+    });
+
+    panel.append(note, text, copyBtn);
+    panel.dataset.loaded = '1';
+    panel.classList.remove('hidden');
+    btn.textContent = 'Hide dispute email';
+  } catch (err) {
+    setStatus(err.message, true);
+    btn.textContent = '✉ Draft dispute email';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function escapeHtml(str) {
@@ -554,7 +630,12 @@ function buildVendorCard(group, index) {
   } else {
     body.appendChild(buildMemo(group));
     body.appendChild(buildSummaryGrid(group.summary));
-    body.appendChild(buildFindingsSection(group.findings));
+    body.appendChild(
+      buildFindingsSection(group.findings, {
+        vendor: group.contract?.vendor || group.vendor,
+        contract: group.contract,
+      })
+    );
     const legalEl = buildLegalSection(group.legal);
     if (legalEl) body.appendChild(legalEl);
   }
@@ -604,7 +685,7 @@ function buildSummaryGrid(summary) {
   const metrics = [
     ['Monthly leakage', fmtUsd(summary?.totalMonthlyImpactUsd), 'metric'],
     ['Annual recoverable', fmtUsd(summary?.totalAnnualImpactUsd), 'metric'],
-    ['Our fee (25% of recovery)', fmtUsd(summary?.suggestedFeeUsd), 'metric accent'],
+    ['One-time recoverable', fmtUsd(summary?.totalOneTimeImpactUsd), 'metric'],
     ['Findings', String(summary?.findingCount ?? 0), 'metric'],
   ];
   const valueClasses = ['metric-value', 'metric-value danger', 'metric-value', 'metric-value'];
@@ -625,7 +706,7 @@ function buildSummaryGrid(summary) {
   return grid;
 }
 
-function buildFindingsSection(findings) {
+function buildFindingsSection(findings, ctx = {}) {
   const wrap = document.createElement('div');
 
   const title = document.createElement('h2');
@@ -643,7 +724,7 @@ function buildFindingsSection(findings) {
     list.style.gap = '14px';
     const order = { critical: 0, moderate: 1, minor: 2 };
     const sorted = [...findings].sort((a, b) => (order[a.severity] ?? 3) - (order[b.severity] ?? 3));
-    for (const f of sorted) list.appendChild(renderFinding(f));
+    for (const f of sorted) list.appendChild(renderFinding(f, ctx));
   }
   wrap.appendChild(list);
 
@@ -811,6 +892,8 @@ function showAuth() {
 }
 
 function setUsage(usage) {
+  cachedUsage = usage;
+  currentPlan = usage.plan || currentPlan;
   const limit = usage.limit == null ? '∞' : usage.limit;
   ubUsage.textContent = `${usage.used} / ${limit} audits · ${usage.planLabel}`;
 }
@@ -841,6 +924,7 @@ async function loadDashboardData() {
     const totalAnnual = audits.reduce((sum, a) => sum + (a.annualImpact || 0), 0);
     const planLabel = cachedUsage?.planLabel || 'Free';
 
+    // Note: no inline style/onclick attributes here — the CSP blocks them.
     statsRow.innerHTML = `
       <div class="stat-card">
         <div class="stat-label">Total Audits</div>
@@ -852,17 +936,23 @@ async function loadDashboardData() {
       </div>
       <div class="stat-card">
         <div class="stat-label">Current Plan</div>
-        <div class="stat-value" style="font-size:20px">${planLabel}</div>
+        <div class="stat-value stat-value--plan">${escapeHtml(planLabel)}</div>
       </div>
     `;
 
     if (audits.length === 0) {
-      recentAudits.innerHTML = `
-        <div class="empty-state">
-          <p>No audits yet — run your first one.</p>
-          <button type="button" class="btn primary" onclick="showView('new-audit')">+ New audit</button>
-        </div>
-      `;
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      const p = document.createElement('p');
+      p.textContent = 'No audits yet — run your first one.';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn primary';
+      btn.textContent = '+ New audit';
+      btn.addEventListener('click', () => showView('new-audit'));
+      empty.append(p, btn);
+      recentAudits.innerHTML = '';
+      recentAudits.appendChild(empty);
       return;
     }
 
@@ -1096,8 +1186,15 @@ function renderPlans(plans) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn primary';
-      btn.textContent = `Upgrade to ${p.label}`;
-      btn.addEventListener('click', () => startCheckout(p.key, btn));
+      // Existing subscribers must switch plans in the Stripe portal — a second
+      // Checkout would start a second, parallel subscription.
+      if (currentPlan !== 'free') {
+        btn.textContent = `Switch to ${p.label}`;
+        btn.addEventListener('click', () => startPortal(btn));
+      } else {
+        btn.textContent = `Upgrade to ${p.label}`;
+        btn.addEventListener('click', () => startCheckout(p.key, btn));
+      }
       action.appendChild(btn);
     }
 

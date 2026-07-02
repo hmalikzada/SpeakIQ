@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClauseGuard — AI Vendor Contract Audit</title>
+  <meta name="description" content="ClauseGuard cross-references your vendor contracts against the invoices you're actually paying and flags overcharges, escalator violations, missed discounts, and duplicate fees — with the clause and invoice line that prove each finding." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -52,6 +54,9 @@
       </form>
       <p class="auth-hint">The Free plan includes 5 audits per month. No card required.</p>
     </div>
+    <p class="legal-links">
+      <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a>
+    </p>
   </div>
 
   <!-- ── App shell (sidebar + main — logged-in only) ─────── -->
@@ -79,6 +84,9 @@
           <span id="ub-usage" class="ub-usage"></span>
         </div>
         <button type="button" id="logout-btn" class="sidebar-signout">Sign out</button>
+        <p class="legal-links legal-links--sidebar">
+          <a href="privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms</a>
+        </p>
       </div>
     </aside>
 
@@ -108,16 +116,16 @@
             <p class="hero-sub">AI reads every clause, cross-references every invoice, and surfaces exactly where you're being overcharged.</p>
             <div class="hero-stats">
               <div class="hero-stat">
-                <span class="hero-stat-val">$2.4M</span>
-                <span class="hero-stat-label">Recovered for clients</span>
+                <span class="hero-stat-val">6</span>
+                <span class="hero-stat-label">Leak types checked every audit</span>
               </div>
               <div class="hero-stat">
-                <span class="hero-stat-val hero-stat-val--danger">18%</span>
-                <span class="hero-stat-label">Avg overcharge rate</span>
+                <span class="hero-stat-val hero-stat-val--danger">100%</span>
+                <span class="hero-stat-label">Findings cite clause + invoice line</span>
               </div>
               <div class="hero-stat">
-                <span class="hero-stat-val">340+</span>
-                <span class="hero-stat-label">Audits completed</span>
+                <span class="hero-stat-val">PDF</span>
+                <span class="hero-stat-label">Board-ready audit report</span>
               </div>
             </div>
           </div>
@@ -142,7 +150,7 @@
       <div id="view-new-audit" class="view hidden">
         <div class="page-header">
           <h1>New Audit</h1>
-          <div class="case-stamp"><span class="live-dot"></span> Powered by GPT-4o</div>
+          <div class="case-stamp"><span class="live-dot"></span> AI document analysis</div>
         </div>
 
         <div class="mode-toggle" role="tablist">
@@ -260,9 +268,9 @@
               <div class="metric-label">Annual recoverable</div>
               <div class="metric-value danger" id="sum-annual">$0</div>
             </div>
-            <div class="metric accent">
-              <div class="metric-label">Our fee (25% of recovery)</div>
-              <div class="metric-value" id="sum-fee">$0</div>
+            <div class="metric">
+              <div class="metric-label">One-time recoverable</div>
+              <div class="metric-value" id="sum-onetime">$0</div>
             </div>
             <div class="metric">
               <div class="metric-label">Findings</div>

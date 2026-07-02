@@ -1631,3 +1631,72 @@ body::before {
   position: relative;
   z-index: 1;
 }
+
+/* ── Legal links (auth footer + sidebar) ─────────────────── */
+.legal-links {
+  margin: 20px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.legal-links a {
+  color: var(--text-faint);
+  text-decoration: none;
+}
+
+.legal-links a:hover { color: var(--text-dim); text-decoration: underline; }
+
+.legal-links--sidebar { margin-top: 12px; }
+
+/* ── Dashboard stat helpers ──────────────────────────────── */
+.stat-value--plan { font-size: 20px; }
+
+/* ── Dispute-letter tool ─────────────────────────────────── */
+.btn-small {
+  padding: 8px 14px;
+  font-size: 12.5px;
+}
+
+.finding-tools {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.dispute-panel {
+  margin-top: 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dispute-note {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.dispute-text {
+  width: 100%;
+  resize: vertical;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 12px 14px;
+}
+
+.dispute-text:focus {
+  outline: none;
+  border-color: var(--green-border);
+}
+
+.dispute-panel .btn { align-self: flex-start; }

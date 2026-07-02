@@ -6,7 +6,7 @@
  */
 import { randomBytes, createHash, randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
-import { eq } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 
 export const SESSION_COOKIE = 'cg_session';
@@ -69,6 +69,10 @@ export async function createSession(userId) {
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await db.insert(schema.sessions).values({ id: hashToken(token), userId, expiresAt });
+  // Opportunistic cleanup so expired sessions don't accumulate forever.
+  db.delete(schema.sessions)
+    .where(lt(schema.sessions.expiresAt, new Date()))
+    .catch(() => {});
   return { token, expiresAt };
 }
 

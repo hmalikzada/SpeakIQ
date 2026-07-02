@@ -31,6 +31,7 @@ import { readFile } from 'fs/promises';
 import { hasApiKey } from './lib/openai.js';
 import { fileToText, classifyAndGroup } from './lib/extract.js';
 import { runAudit } from './lib/pipeline.js';
+import { draftDisputeLetter } from './lib/matcher.js';
 import { buildReportPdf } from './lib/report.js';
 import { hasDb, runMigrations } from './db/index.js';
 import {
@@ -113,9 +114,16 @@ app.use('/samples', express.static(join(__dirname, 'samples')));
 // Attach req.user (or null) from the session cookie on every request.
 app.use(attachUser);
 
+// Only accept the document types the extractors can actually read.
+const ALLOWED_UPLOAD_EXT = /\.(pdf|docx|txt|csv)$/i;
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB per file
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_UPLOAD_EXT.test(file.originalname || '')) return cb(null, true);
+    cb(new Error('UNSUPPORTED_FILE_TYPE'));
+  },
 });
 
 // Caps OpenAI-backed spend: per-IP limit on the expensive analysis endpoints.
@@ -127,19 +135,37 @@ const analyzeLimiter = rateLimit({
   message: { error: 'Too many analysis requests. Please try again later.' },
 });
 
+// Slows credential stuffing / brute force and free-account farming.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.AUTH_RATE_LIMIT) || 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Please wait a few minutes and try again.' },
+});
+
+// Letter drafting is cheaper than a full audit but still an OpenAI call.
+const letterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.LETTER_RATE_LIMIT) || 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many letter requests. Please try again later.' },
+});
+
 // ── /api/status ───────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
   res.json({ ready: hasApiKey(), accounts: hasDb() });
 });
 
 // ── Auth ──────────────────────────────────────────────────────
-app.post('/api/auth/register', requireDb, sameOrigin, async (req, res) => {
+app.post('/api/auth/register', requireDb, sameOrigin, authLimiter, async (req, res) => {
   try {
     const { email, password, name, company } = req.body || {};
     if (!validEmail(email) || !validPassword(password)) {
       return res
         .status(400)
-        .json({ error: 'Enter a valid email and a password of at least 8 characters.' });
+        .json({ error: 'Enter a valid email and a password of 8–72 characters.' });
     }
     if (!name || !String(name).trim()) {
       return res.status(400).json({ error: 'Please enter your name.' });
@@ -147,7 +173,12 @@ app.post('/api/auth/register', requireDb, sameOrigin, async (req, res) => {
     if (await findUserByEmail(email)) {
       return res.status(409).json({ error: 'An account with that email already exists.' });
     }
-    const user = await createUser({ email, password, name, company });
+    const user = await createUser({
+      email,
+      password,
+      name: String(name).slice(0, 120),
+      company: company ? String(company).slice(0, 120) : company,
+    });
     await startSession(res, user.id);
     res.json({ user: publicUser(user), usage: await usageFor(user) });
   } catch (e) {
@@ -156,7 +187,7 @@ app.post('/api/auth/register', requireDb, sameOrigin, async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', requireDb, sameOrigin, async (req, res) => {
+app.post('/api/auth/login', requireDb, sameOrigin, authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body || {};
     const user = await findUserByEmail(email || '');
@@ -205,6 +236,17 @@ app.post('/api/billing/checkout', requireDb, sameOrigin, requireAuth, async (req
     const priceId = priceIdForPlan(plan);
     if (!priceId) {
       return res.status(400).json({ error: 'That plan is not available for checkout.' });
+    }
+
+    // A second Checkout would create a second, parallel subscription (double
+    // billing). Existing subscribers switch plans through the Customer Portal.
+    if (
+      req.user.stripeSubscriptionId &&
+      ['active', 'trialing', 'past_due'].includes(req.user.subscriptionStatus)
+    ) {
+      return res.status(409).json({
+        error: 'You already have an active subscription — use "Manage billing" to change plans.',
+      });
     }
 
     const customerId = await ensureStripeCustomer(req.user);
@@ -473,6 +515,31 @@ app.get('/api/audits/:id', requireDb, requireAuth, async (req, res) => {
   }
 });
 
+// ── /api/dispute-letter — draft a vendor dispute email from a finding ──
+app.post('/api/dispute-letter', requireDb, sameOrigin, requireAuth, letterLimiter, async (req, res) => {
+  if (!hasApiKey()) {
+    return res.status(503).json({ error: 'Server has no OpenAI key configured.' });
+  }
+  try {
+    const { vendor, contract, finding } = req.body || {};
+    if (!finding || typeof finding !== 'object') {
+      return res.status(400).json({ error: 'Missing finding to dispute.' });
+    }
+    const letter = await draftDisputeLetter({
+      vendor,
+      contract,
+      finding,
+      sender: { name: req.user.name, company: req.user.company },
+    });
+    res.json({ letter });
+  } catch (e) {
+    console.error('/api/dispute-letter error:', e);
+    res
+      .status(500)
+      .json({ error: 'Something went wrong while drafting the letter. Please try again.' });
+  }
+});
+
 // ── /api/report — render an analysis result as a PDF audit report ──
 app.post('/api/report', requireAuth, sameOrigin, (req, res) => {
   try {
@@ -642,11 +709,16 @@ function sameOrigin(req, res, next) {
 }
 
 function validEmail(email) {
-  return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  return (
+    typeof email === 'string' &&
+    email.trim().length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  );
 }
 
+// Upper bound matches bcrypt's 72-byte input limit (it silently truncates past that).
 function validPassword(pw) {
-  return typeof pw === 'string' && pw.length >= 8;
+  return typeof pw === 'string' && pw.length >= 8 && Buffer.byteLength(pw, 'utf8') <= 72;
 }
 
 // ── Optional Basic Auth middleware ────────────────────────────
@@ -677,6 +749,31 @@ function safeEqual(a, b) {
   return timingSafeEqual(bufA, bufB);
 }
 
+// ── Error handler — keep upload/body-parser failures as clean JSON ──
+// Without this, an oversized file or malformed JSON body falls through to
+// Express's default handler and returns an HTML stack page.
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err instanceof multer.MulterError) {
+    const msg =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'One of your files is larger than the 15MB limit.'
+        : `Upload error: ${err.message}.`;
+    return res.status(400).json({ error: msg });
+  }
+  if (err.message === 'UNSUPPORTED_FILE_TYPE') {
+    return res.status(400).json({ error: 'Unsupported file type — upload PDF, DOCX, TXT, or CSV files.' });
+  }
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid request body.' });
+  }
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Request body is too large.' });
+  }
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Something went wrong. Please try again.' });
+});
+
 // ── Boot ──────────────────────────────────────────────────────
 if (hasDb()) {
   try {
@@ -689,10 +786,18 @@ if (hasDb()) {
   console.warn('🗄️   Database: ✗ DATABASE_URL not set — accounts & history disabled');
 }
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n✅  ClauseGuard running at http://localhost:${PORT}`);
   console.log(`   OpenAI key: ${hasApiKey() ? '✓ loaded from .env' : '✗ NOT SET — add OPENAI_API_KEY to .env'}`);
   console.log(`   Auth gate:  ${BASIC_USER && BASIC_PASS ? '✓ Basic Auth enabled' : '✗ open (set BASIC_AUTH_USER/PASS to lock down)'}`);
   console.log(`   Billing:    ${billingEnabled() ? '✓ Stripe connected' : '✗ not configured (set STRIPE_SECRET_KEY)'}`);
   console.log(`   Rate limit: ${Number(process.env.ANALYZE_RATE_LIMIT) || 20} analyses / IP / hour\n`);
+});
+
+// Railway sends SIGTERM on redeploy — stop accepting connections, let
+// in-flight requests finish, then exit.
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received — shutting down gracefully');
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10000).unref();
 });

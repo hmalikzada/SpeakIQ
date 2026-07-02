@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — ClauseGuard</title>
+  <meta name="description" content="How ClauseGuard handles your account data and the documents you upload." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="legal.css" />
+</head>
+<body>
+  <div class="legal-wrap">
+    <a class="legal-brand" href="/">
+      <svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 4L8 11V26C8 35 15.5 42.5 24 45C32.5 42.5 40 35 40 26V11L24 4Z" fill="#16a34a" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
+        <line x1="16" y1="20" x2="32" y2="20" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="16" y1="24" x2="26" y2="24" stroke="#22c55e" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="16" y1="28" x2="28" y2="28" stroke="#4b5563" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      ClauseGuard
+    </a>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: July 2026</p>
+
+    <p class="notice">This policy is provided as a template summary of how the service actually works today. Before relying on it commercially, have it reviewed by legal counsel for your jurisdiction and customer base.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><strong>Account information</strong> — your email address, name, optional company name, and a hashed password (we never store your password in plain text).</li>
+      <li><strong>Documents you upload</strong> — contracts, amendments, and invoices you submit for analysis.</li>
+      <li><strong>Audit results</strong> — the findings, summaries, and advisory text generated for you, stored so you can revisit them in your history.</li>
+      <li><strong>Billing information</strong> — handled entirely by Stripe. We never see or store your card number; we keep only your Stripe customer/subscription identifiers and plan status.</li>
+    </ul>
+
+    <h2>How uploaded documents are handled</h2>
+    <ul>
+      <li>Uploaded files are processed <strong>in memory</strong> and are not written to disk on our servers.</li>
+      <li>The extracted text of your documents is sent to <strong>OpenAI</strong> (our AI subprocessor) to perform the analysis. Per OpenAI's API data-usage policy, API data is not used to train their models.</li>
+      <li>The structured results of your audit (not the original files) are stored in our database so they appear in your audit history.</li>
+    </ul>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We do not sell your data or share it with advertisers.</li>
+      <li>We do not use your documents to train AI models.</li>
+      <li>We do not store card numbers or payment credentials.</li>
+    </ul>
+
+    <h2>Security</h2>
+    <p>All traffic is encrypted in transit (HTTPS). Passwords are hashed with bcrypt. Sessions use httpOnly, secure cookies, and only a hash of the session token is stored server-side. Audit results are only accessible from the account that created them.</p>
+
+    <h2>Data retention &amp; deletion</h2>
+    <p>Audit history is retained while your account is active. To delete your account and all associated audit history, contact us at the email below and we will remove it.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or deletion requests: <a href="mailto:hmalikzada4@gmail.com">hmalikzada4@gmail.com</a></p>
+
+    <div class="legal-footer">
+      <a href="/">← Back to ClauseGuard</a> · <a href="terms.html">Terms of Service</a>
+    </div>
+  </div>
+</body>
+</html>

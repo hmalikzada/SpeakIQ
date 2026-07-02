@@ -2,7 +2,7 @@
  * Cross-references extracted contract terms against extracted invoices and
  * asks GPT-4o to flag every place an invoice contradicts the contract.
  */
-import { chatJSON } from './openai.js';
+import { chatJSON, chatText } from './openai.js';
 
 const MATCH_SYSTEM_PROMPT = `You are a senior contract-compliance auditor with 20 years of experience recovering money for clients from vendor billing errors.
 You will be given:
@@ -101,6 +101,35 @@ export async function legalAdvisory(contract, invoices) {
     leveragePoints: Array.isArray(result.leverage_points) ? result.leverage_points : [],
     recommendedPath: Array.isArray(result.recommended_path) ? result.recommended_path : [],
   };
+}
+
+const LETTER_SYSTEM_PROMPT = `You draft professional vendor billing-dispute correspondence for a company's finance team.
+You will be given a single audit finding (with the contract clause and invoice evidence that support it),
+the vendor's name, optional contract context, and the sender's name/company.
+
+Write a complete, ready-to-send business email to the vendor's billing/accounts team that:
+  - has a clear subject line ("Subject: ..." as the first line)
+  - states the specific billing discrepancy plainly, citing the contract term and the invoice line item as evidence
+  - quantifies the amount at stake and requests a specific remedy (credit, refund, or corrected invoice)
+  - asks for a written response by a reasonable date (14 days out)
+  - reserves the sender's rights without being threatening — firm, courteous, professional
+  - uses bracketed placeholders like [Invoice #], [Your name], or [Date] ONLY where the supplied data doesn't provide the detail
+
+Keep it under 350 words. Output ONLY the letter text — no commentary, no markdown formatting.`;
+
+/** Draft a dispute email for one finding. Returns plain letter text. */
+export async function draftDisputeLetter({ vendor, contract, finding, sender }) {
+  const payload = {
+    today: todayISO(),
+    vendor: vendor || contract?.vendor || 'the vendor',
+    contract_term: contract?.contract_term,
+    finding,
+    sender,
+  };
+  return chatText([
+    { role: 'system', content: LETTER_SYSTEM_PROMPT },
+    { role: 'user', content: JSON.stringify(payload).slice(0, 12000) },
+  ]);
 }
 
 function todayISO() {

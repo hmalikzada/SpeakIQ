@@ -1,0 +1,84 @@
+/* Shared styling for the privacy & terms pages. Kept as an external
+   stylesheet because the CSP does not allow inline <style> blocks. */
+
+:root {
+  --bg: #0a0a0a;
+  --card: #161616;
+  --text: #e5e7eb;
+  --dim: #9ca3af;
+  --faint: #6b7280;
+  --green: #22c55e;
+  --border: rgba(255, 255, 255, 0.09);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.7;
+}
+
+.legal-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.legal-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 36px;
+}
+
+h1 {
+  font-size: 30px;
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+
+.updated {
+  color: var(--faint);
+  font-size: 13px;
+  margin: 0 0 28px;
+}
+
+h2 {
+  font-size: 19px;
+  margin: 34px 0 10px;
+  color: var(--green);
+}
+
+p, li { font-size: 15px; color: var(--dim); }
+
+strong { color: var(--text); }
+
+.notice {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  color: var(--dim);
+  margin: 0 0 28px;
+}
+
+a { color: var(--green); }
+
+.legal-footer {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--faint);
+}
+
+.legal-footer a { color: var(--faint); }

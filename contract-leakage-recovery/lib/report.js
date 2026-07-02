@@ -65,7 +65,7 @@ export function buildReportPdf({ contract, findings, executiveSummary, legal, su
   const metrics = [
     ['Monthly leakage found', fmtUsd(summary?.totalMonthlyImpactUsd)],
     ['Annual recoverable', fmtUsd(summary?.totalAnnualImpactUsd)],
-    ['Suggested fee (25% contingency)', fmtUsd(summary?.suggestedFeeUsd)],
+    ['One-time recoverable', fmtUsd(summary?.totalOneTimeImpactUsd)],
     ['Findings', String(summary?.findingCount ?? 0)],
   ];
   metrics.forEach(([label, value]) => {
